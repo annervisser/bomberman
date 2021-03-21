@@ -24,12 +24,12 @@ export class Game {
         requestAnimationFrame(this.handleAnimationFrame.bind(this));
     }
 
-    handleAnimationFrame(time: number, prevTime: number = 0) {
+    handleAnimationFrame(time: number, prevTime = 0): void {
         this.draw(time - prevTime);
         requestAnimationFrame((t) => this.handleAnimationFrame(t, time));
     }
 
-    draw(deltaT: number) {
+    draw(deltaT: number): void {
         this.ctx.clearRect(0, 0, ...this.size);
         this.ctx.fillStyle = 'red';
         this.ctx.fillRect(0, 0, ...this.size)

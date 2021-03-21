@@ -8,7 +8,7 @@ export interface ObjectI {
 }
 
 export abstract class AbstractObject implements ObjectI {
-    visible: boolean = true;
+    visible = true;
     x: number;
     y: number;
 
