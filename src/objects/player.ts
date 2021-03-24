@@ -12,6 +12,6 @@ export class Player extends AbstractObject {
     }
 
     draw(ctx: CanvasRenderingContext2D, deltaT: number): void {
-        this.sprite.draw(ctx, ...this.position);
+        this.sprite.draw(ctx, ...this.position, 80, 80);
     }
 }

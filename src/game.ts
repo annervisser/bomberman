@@ -23,9 +23,17 @@ export class Game {
 
     constructor(canvas: HTMLCanvasElement) {
         this.ctx = <CanvasRenderingContext2D>canvas.getContext('2d');
-        console.log('game constructor');
+
+        canvas.width = 1200;
+        canvas.height = 900;
+        const root = document.documentElement;
+        root.style.setProperty('--canvas-width', `${canvas.width}px`)
+        root.style.setProperty('--canvas-height', `${canvas.height}px`)
+
+        this.ctx.imageSmoothingEnabled = false; // We want crispy pixels
 
         this.gameData.spriteStore.loadSprite(Sprites.Heart);
+
         this.gameData.spriteStore.loadAllSprites()
             .then(() => {
                 this.setup();
