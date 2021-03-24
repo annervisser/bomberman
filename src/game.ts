@@ -8,6 +8,7 @@ export class Game {
     private rect = new Rectangle(10, 10, 20, 5);
     private gameData: GameData = new GameData();
     private player!: Player;
+    private pressedKeys = new Set<string>();
 
     private get width(): number {
         return this.ctx.canvas.width;
@@ -52,9 +53,26 @@ export class Game {
 
     setup(): void {
         this.player = new Player(100, 100, this.gameData);
+
+        document.addEventListener('keydown', (e) => {
+            this.pressedKeys.add(e.code);
+        }, false);
+        document.addEventListener('keyup', (e) => {
+            // Does it make sense to delay this until the end of a frame (theoretical: keyup and down between frames)?
+            this.pressedKeys.delete(e.code);
+        }, false);
+    }
+
+    private readonly keyMap: { [key: string]: (a: number) => void } = {
+        'KeyW': (a) => this.player.y -= a,
+        'KeyS': (a) => this.player.y += a,
+        'KeyA': (a) => this.player.x -= a,
+        'KeyD': (a) => this.player.x += a,
     }
 
     draw(deltaT: number): void {
+        this.pressedKeys.forEach((k) => this.keyMap[k]?.(5))
+
         this.ctx.clearRect(0, 0, ...this.size);
         this.ctx.fillStyle = '#19142B';
         this.ctx.fillRect(0, 0, ...this.size);
