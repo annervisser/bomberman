@@ -18,6 +18,7 @@ const config = {
         },
         sourcemap: true,
         chunkSizeWarningLimit: 6,
+        assetsInlineLimit: 0
     },
     plugins: [
         viteImagemin(imageMinConfig)
