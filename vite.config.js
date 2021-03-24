@@ -12,7 +12,7 @@ const config = {
     build: {
         terserOptions: {
             mangle: {
-                properties: true
+                properties: false
             },
             compress: true,
         },
