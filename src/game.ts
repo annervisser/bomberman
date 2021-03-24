@@ -56,7 +56,7 @@ export class Game {
 
     draw(deltaT: number): void {
         this.ctx.clearRect(0, 0, ...this.size);
-        this.ctx.fillStyle = '#1e1b2e';
+        this.ctx.fillStyle = '#19142B';
         this.ctx.fillRect(0, 0, ...this.size);
         this.rect.draw(this.ctx, deltaT);
         this.player.draw(this.ctx, deltaT);
