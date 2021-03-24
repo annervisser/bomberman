@@ -1,19 +1,14 @@
-import {AbstractObject} from "./ObjectI";
-
-interface Sizable {
-    width: number;
-    height: number;
-    dimensions: [number, number];
-}
+import {Sizable} from './interfaces/sizable';
+import {AbstractObject} from './interfaces/abstractObject';
 
 export class Rectangle extends AbstractObject implements Sizable {
-    height: number;
-    width: number;
-
-    constructor(x: number, y: number, width: number, height: number) {
+    constructor(
+        x: number,
+        y: number,
+        public width: number,
+        public height: number,
+    ) {
         super(x, y);
-        this.width = width;
-        this.height = height;
     }
 
     get dimensions(): [number, number] {
@@ -27,6 +22,6 @@ export class Rectangle extends AbstractObject implements Sizable {
             this.position[1] + velocity[1]
         ];
         ctx.fillStyle = 'green';
-        ctx.fillRect(...this.position, ...this.dimensions)
+        ctx.fillRect(...this.position, ...this.dimensions);
     }
 }

@@ -1,11 +1,16 @@
-import {Rectangle} from "./objects/rectangle";
+import {Rectangle} from './objects/rectangle';
+import {GameData} from './utils/gameData';
+import {Sprites} from './utils/spriteStore';
+import {Player} from './objects/player';
 
 export class Game {
     private readonly ctx: CanvasRenderingContext2D;
     private rect = new Rectangle(10, 10, 20, 5);
+    private gameData: GameData = new GameData();
+    private player!: Player;
 
     private get width(): number {
-        return this.ctx.canvas.width
+        return this.ctx.canvas.width;
     }
 
     private get height(): number {
@@ -17,11 +22,19 @@ export class Game {
     }
 
     constructor(canvas: HTMLCanvasElement) {
-        this.ctx = <CanvasRenderingContext2D>canvas.getContext("2d");
+        this.ctx = <CanvasRenderingContext2D>canvas.getContext('2d');
         console.log('game constructor');
 
-
-        requestAnimationFrame(this.handleAnimationFrame.bind(this));
+        this.gameData.spriteStore.loadSprite(Sprites.Heart);
+        this.gameData.spriteStore.loadAllSprites()
+            .then(() => {
+                this.setup();
+                requestAnimationFrame(this.handleAnimationFrame.bind(this));
+            })
+            .catch((err) => {
+                console.error('sprite loading error', err);
+                alert('Error while loading sprites');
+            });
     }
 
     handleAnimationFrame(time: number, prevTime = 0): void {
@@ -29,10 +42,15 @@ export class Game {
         requestAnimationFrame((t) => this.handleAnimationFrame(t, time));
     }
 
+    setup(): void {
+        this.player = new Player(100, 100, this.gameData);
+    }
+
     draw(deltaT: number): void {
         this.ctx.clearRect(0, 0, ...this.size);
-        this.ctx.fillStyle = 'red';
-        this.ctx.fillRect(0, 0, ...this.size)
+        this.ctx.fillStyle = '#1e1b2e';
+        this.ctx.fillRect(0, 0, ...this.size);
         this.rect.draw(this.ctx, deltaT);
+        this.player.draw(this.ctx, deltaT);
     }
 }

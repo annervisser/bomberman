@@ -1,12 +1,16 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es5",
+    "target": "es6",
     "sourceMap": true,
     "isolatedModules": true,
     "strict": true,
+    "types": [
+      "vite/client"
+    ]
   },
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist"
   ]
 }
