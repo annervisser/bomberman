@@ -30,3 +30,6 @@ jobs:
 
       - name: ESLint
         run: npx eslint .
+
+      - name: Run vite build
+        run: npm run build
