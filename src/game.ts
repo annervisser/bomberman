@@ -2,6 +2,7 @@ import {Rectangle} from './objects/rectangle';
 import {GameData} from './utils/gameData';
 import {Sprites} from './utils/spriteStore';
 import {Player} from './objects/player';
+import {GameMap} from "./objects/gameMap";
 
 export class Game {
     private readonly ctx: CanvasRenderingContext2D;
@@ -9,6 +10,7 @@ export class Game {
     private gameData: GameData = new GameData();
     private player!: Player;
     private pressedKeys = new Set<string>();
+    private map = new GameMap();
 
     private get width(): number {
         return this.ctx.canvas.width;
@@ -25,8 +27,8 @@ export class Game {
     constructor(canvas: HTMLCanvasElement) {
         this.ctx = <CanvasRenderingContext2D>canvas.getContext('2d');
 
-        canvas.width = 1200;
-        canvas.height = 900;
+        canvas.width = 64 * 21;
+        canvas.height = 64 * 11;
         const root = document.documentElement;
         root.style.setProperty('--canvas-width', `${canvas.width}px`)
         root.style.setProperty('--canvas-height', `${canvas.height}px`)
@@ -58,7 +60,7 @@ export class Game {
             this.pressedKeys.add(e.code);
         }, false);
         document.addEventListener('keyup', (e) => {
-            // Does it make sense to delay this until the end of a frame (theoretical: keyup and down between frames)?
+            // TODO Does it make sense to delay this until the end of a frame (theoretical: keyup and down between frames)?
             this.pressedKeys.delete(e.code);
         }, false);
     }
@@ -75,6 +77,9 @@ export class Game {
 
         this.ctx.clearRect(0, 0, ...this.size);
         this.rect.draw(this.ctx, deltaT);
+
+        this.map.walls.forEach(w => w.draw(this.ctx, deltaT));
+
         this.player.draw(this.ctx, deltaT);
     }
 }
