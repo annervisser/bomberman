@@ -20,6 +20,7 @@ html, body {
 #canvasEl {
     width: var(--canvas-width);
     height: var(--canvas-height);
+    background: #19142B;
 }
 
 *, *::before, *::after {

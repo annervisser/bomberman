@@ -71,11 +71,9 @@ export class Game {
     }
 
     draw(deltaT: number): void {
-        this.pressedKeys.forEach((k) => this.keyMap[k]?.(5))
+        this.pressedKeys.forEach((k) => this.keyMap[k]?.(10))
 
         this.ctx.clearRect(0, 0, ...this.size);
-        this.ctx.fillStyle = '#19142B';
-        this.ctx.fillRect(0, 0, ...this.size);
         this.rect.draw(this.ctx, deltaT);
         this.player.draw(this.ctx, deltaT);
     }
