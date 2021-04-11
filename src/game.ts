@@ -2,7 +2,13 @@ import {Rectangle} from './objects/rectangle';
 import {GameData} from './utils/gameData';
 import {Sprites} from './utils/spriteStore';
 import {Player} from './objects/player';
-import {GameMap} from "./objects/gameMap";
+import {AbstractWall, DestructibleBlock, GameMap} from "./objects/gameMap";
+import {AbstractObject} from "./objects/interfaces/abstractObject";
+
+export enum AxisIndex {
+    X = 0,
+    Y = 1
+}
 
 export class Game {
     private readonly ctx: CanvasRenderingContext2D;
@@ -54,7 +60,7 @@ export class Game {
     }
 
     setup(): void {
-        this.player = new Player(100, 100, this.gameData);
+        this.player = new Player(64, 64, this.gameData);
 
         document.addEventListener('keydown', (e) => {
             this.pressedKeys.add(e.code);
@@ -73,7 +79,13 @@ export class Game {
     }
 
     draw(deltaT: number): void {
+        const originalPlayerLocation = this.player.position;
+
         this.pressedKeys.forEach((k) => this.keyMap[k]?.(10))
+
+        if (originalPlayerLocation.join() !== this.player.position.join()) {
+            this.checkCollision(originalPlayerLocation);
+        }
 
         this.ctx.clearRect(0, 0, ...this.size);
         this.rect.draw(this.ctx, deltaT);
@@ -81,5 +93,54 @@ export class Game {
         this.map.walls.forEach(w => w.draw(this.ctx, deltaT));
 
         this.player.draw(this.ctx, deltaT);
+    }
+
+    private checkCollision(originalPlayerLocation: [number, number]) {
+        const isCollision = (axis: AxisIndex, object: AbstractObject, playerPosition = this.player.position) =>
+            object.position[axis] < playerPosition[axis] + this.player.size
+            && object.position[axis] + AbstractWall.size > playerPosition[axis];
+
+        const allCollisions = this.map.walls.filter(value => {
+            const xCollision = isCollision(AxisIndex.X, value);
+            const yCollision = isCollision(AxisIndex.Y, value);
+            return xCollision && yCollision;
+        });
+
+        const collisions = allCollisions.filter(wall => !(wall instanceof DestructibleBlock));
+
+        // Remove destructible walls on collision
+        // TODO remove this when bombs are a thing
+        const collisionsWithDestructible = allCollisions.filter(wall => wall instanceof DestructibleBlock);
+        this.map.walls = this.map.walls.filter((wall) => !collisionsWithDestructible.includes(wall))
+
+        if (collisions.length) {
+            const xAlreadyCollided = collisions.some((c) => isCollision(AxisIndex.X, c, originalPlayerLocation));
+            const yAlreadyCollided = collisions.some((c) => isCollision(AxisIndex.Y, c, originalPlayerLocation));
+
+            if (!xAlreadyCollided) {
+                const [min, max] = this.getMinMaxPositions(collisions, AxisIndex.X);
+                this.player.x = originalPlayerLocation[AxisIndex.X] < this.player.x
+                    ? min - AbstractWall.size
+                    : max + AbstractWall.size;
+            } else if (!yAlreadyCollided) {
+                const [min, max] = this.getMinMaxPositions(collisions, AxisIndex.Y);
+                this.player.y = originalPlayerLocation[AxisIndex.Y] < this.player.y
+                    ? min - AbstractWall.size
+                    : max + AbstractWall.size;
+            } else {
+                this.player.position = originalPlayerLocation;
+            }
+        }
+    }
+
+    private getMinMaxPositions(objects: AbstractObject[], axis: AxisIndex): [number, number] {
+        // TODO take all collisions into account (or deduce relevenat ones?)
+        return objects.slice(0, 1)
+            .reduce((previousValue, currentValue) => {
+                return [
+                    Math.min(previousValue[0], currentValue.position[axis]),
+                    Math.max(previousValue[1], currentValue.position[axis])
+                ];
+            }, [Number.MAX_VALUE, -1]);
     }
 }
