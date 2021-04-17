@@ -5,15 +5,15 @@ import {Sprite} from '../utils/image';
 
 export class Player extends AbstractObject {
     private sprite: Sprite;
-    public size = 50;
+    public static size = 50;
 
     constructor(x: number, y: number, gameData: GameData) {
         super(x, y);
-        this.sprite = gameData.spriteStore.getSprite(Sprites.Heart);
+        this.sprite = gameData.spriteStore.getSprite(Sprites.SolidBlue);
     }
 
 
     draw(ctx: CanvasRenderingContext2D, deltaT: number): void {
-        this.sprite.draw(ctx, ...this.position, this.size, this.size);
+        this.sprite.draw(ctx, ...this.position, Player.size, Player.size);
     }
 }

@@ -42,6 +42,7 @@ export class Game {
         this.ctx.imageSmoothingEnabled = false; // We want crispy pixels
 
         this.gameData.spriteStore.loadSprite(Sprites.Heart);
+        this.gameData.spriteStore.loadSprite(Sprites.SolidBlue);
 
         this.gameData.spriteStore.loadAllSprites()
             .then(() => {
@@ -97,7 +98,7 @@ export class Game {
 
     private checkCollision(originalPlayerLocation: [number, number]) {
         const isCollision = (axis: AxisIndex, object: AbstractObject, playerPosition = this.player.position) =>
-            object.position[axis] < playerPosition[axis] + this.player.size
+            object.position[axis] < playerPosition[axis] + Player.size
             && object.position[axis] + AbstractWall.size > playerPosition[axis];
 
         const allCollisions = this.map.walls.filter(value => {
@@ -108,11 +109,6 @@ export class Game {
 
         const collisions = allCollisions.filter(wall => !(wall instanceof DestructibleBlock));
 
-        // Remove destructible walls on collision
-        // TODO remove this when bombs are a thing
-        const collisionsWithDestructible = allCollisions.filter(wall => wall instanceof DestructibleBlock);
-        this.map.walls = this.map.walls.filter((wall) => !collisionsWithDestructible.includes(wall))
-
         if (collisions.length) {
             const xAlreadyCollided = collisions.some((c) => isCollision(AxisIndex.X, c, originalPlayerLocation));
             const yAlreadyCollided = collisions.some((c) => isCollision(AxisIndex.Y, c, originalPlayerLocation));
@@ -120,21 +116,29 @@ export class Game {
             if (!xAlreadyCollided) {
                 const [min, max] = this.getMinMaxPositions(collisions, AxisIndex.X);
                 this.player.x = originalPlayerLocation[AxisIndex.X] < this.player.x
-                    ? min - AbstractWall.size
+                    ? min - Player.size
                     : max + AbstractWall.size;
             } else if (!yAlreadyCollided) {
                 const [min, max] = this.getMinMaxPositions(collisions, AxisIndex.Y);
                 this.player.y = originalPlayerLocation[AxisIndex.Y] < this.player.y
-                    ? min - AbstractWall.size
+                    ? min - Player.size
                     : max + AbstractWall.size;
             } else {
                 this.player.position = originalPlayerLocation;
             }
         }
+
+        // Remove destructible walls on collision
+        // TODO remove this when bombs are a thing
+        const collisionsWithDestructible = allCollisions
+            .filter(wall => wall instanceof DestructibleBlock)
+            .filter(wall => isCollision(AxisIndex.X, wall) && isCollision(AxisIndex.Y, wall));
+
+        this.map.walls = this.map.walls.filter((wall) => !collisionsWithDestructible.includes(wall))
     }
 
     private getMinMaxPositions(objects: AbstractObject[], axis: AxisIndex): [number, number] {
-        // TODO take all collisions into account (or deduce relevenat ones?)
+        // TODO take all collisions into account (or deduce relevant ones?)
         return objects.slice(0, 1)
             .reduce((previousValue, currentValue) => {
                 return [

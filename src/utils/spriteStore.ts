@@ -3,6 +3,7 @@ import spriteUrl from '/assets/sprites/8x8.png';
 
 export enum Sprites {
     Heart,
+    SolidBlue,
 }
 
 export const spriteLocations: {
@@ -18,6 +19,13 @@ export const spriteLocations: {
         file: spriteUrl,
         x: 40,
         y: 40,
+        width: 8,
+        height: 8
+    },
+    [Sprites.SolidBlue]: {
+        file: spriteUrl,
+        x: 5,
+        y: 65,
         width: 8,
         height: 8
     },
