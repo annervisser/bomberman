@@ -2,13 +2,8 @@ import {Rectangle} from './objects/rectangle';
 import {GameData} from './utils/gameData';
 import {Sprites} from './utils/spriteStore';
 import {Player} from './objects/player';
-import {AbstractWall, DestructibleBlock, GameMap} from "./objects/gameMap";
-import {AbstractObject} from "./objects/interfaces/abstractObject";
-
-export enum AxisIndex {
-    X = 0,
-    Y = 1
-}
+import {AbstractWall, DestructibleBlock, GameMap, SolidWall} from "./objects/gameMap";
+import {AbstractObject, Axis, Point} from "./objects/interfaces/abstractObject";
 
 export class Game {
     private readonly ctx: CanvasRenderingContext2D;
@@ -56,7 +51,14 @@ export class Game {
     }
 
     handleAnimationFrame(time: number, prevTime = 0): void {
-        this.draw(time - prevTime);
+        try {
+            this.draw(time - prevTime);
+        } catch (e) {
+            if (e instanceof Error) {
+                alert('An error occured: ' + e.toString())
+            }
+            throw e;
+        }
         requestAnimationFrame((t) => this.handleAnimationFrame(t, time));
     }
 
@@ -79,6 +81,8 @@ export class Game {
         'KeyD': (a) => this.player.x += a,
     }
 
+    private direction: Axis | null = null;
+
     draw(deltaT: number): void {
         const originalPlayerLocation = this.player.position;
 
@@ -86,6 +90,17 @@ export class Game {
 
         if (originalPlayerLocation.join() !== this.player.position.join()) {
             this.checkCollision(originalPlayerLocation);
+        }
+
+        this.direction = null;
+
+        // If we've still moved, AFTER collision detection
+        if (originalPlayerLocation.join() !== this.player.position.join()) {
+            const xMovement = Math.abs(this.player.x - originalPlayerLocation[Axis.X]);
+            const yMovement = Math.abs(this.player.y - originalPlayerLocation[Axis.Y]);
+            if (xMovement !== yMovement) {
+                this.direction = xMovement > yMovement ? Axis.X : Axis.Y;
+            }
         }
 
         this.ctx.clearRect(0, 0, ...this.size);
@@ -96,48 +111,90 @@ export class Game {
         this.player.draw(this.ctx, deltaT);
     }
 
+    /** TODO The whole collision detection needs a lot of cleanup. Having a bbox instead of position and size might help*/
     private checkCollision(originalPlayerLocation: [number, number]) {
-        const isCollision = (axis: AxisIndex, object: AbstractObject, playerPosition = this.player.position) =>
-            object.position[axis] < playerPosition[axis] + Player.size
-            && object.position[axis] + AbstractWall.size > playerPosition[axis];
+        const allCollisions = this.map.walls.filter(
+            value => this.isCollision(Axis.X, value) && this.isCollision(Axis.Y, value)
+        );
 
-        const allCollisions = this.map.walls.filter(value => {
-            const xCollision = isCollision(AxisIndex.X, value);
-            const yCollision = isCollision(AxisIndex.Y, value);
-            return xCollision && yCollision;
-        });
+        const solidCollisions = allCollisions.filter(wall => !(wall instanceof DestructibleBlock));
+        const destructibleCollisions = allCollisions.filter(wall => wall instanceof DestructibleBlock);
 
-        const collisions = allCollisions.filter(wall => !(wall instanceof DestructibleBlock));
-
-        if (collisions.length) {
-            const xAlreadyCollided = collisions.some((c) => isCollision(AxisIndex.X, c, originalPlayerLocation));
-            const yAlreadyCollided = collisions.some((c) => isCollision(AxisIndex.Y, c, originalPlayerLocation));
-
-            if (!xAlreadyCollided) {
-                const [min, max] = this.getMinMaxPositions(collisions, AxisIndex.X);
-                this.player.x = originalPlayerLocation[AxisIndex.X] < this.player.x
-                    ? min - Player.size
-                    : max + AbstractWall.size;
-            } else if (!yAlreadyCollided) {
-                const [min, max] = this.getMinMaxPositions(collisions, AxisIndex.Y);
-                this.player.y = originalPlayerLocation[AxisIndex.Y] < this.player.y
-                    ? min - Player.size
-                    : max + AbstractWall.size;
-            } else {
-                this.player.position = originalPlayerLocation;
-            }
+        if (solidCollisions.length) {
+            this.correctPositionForCollisions(originalPlayerLocation, solidCollisions);
         }
 
         // Remove destructible walls on collision
         // TODO remove this when bombs are a thing
-        const collisionsWithDestructible = allCollisions
-            .filter(wall => wall instanceof DestructibleBlock)
-            .filter(wall => isCollision(AxisIndex.X, wall) && isCollision(AxisIndex.Y, wall));
-
-        this.map.walls = this.map.walls.filter((wall) => !collisionsWithDestructible.includes(wall))
+        this.map.walls = this.map.walls.filter((wall) => {
+            return !destructibleCollisions
+                // Only if we're still colliding after position changes
+                .filter(wall => this.isCollision(Axis.X, wall) && this.isCollision(Axis.Y, wall))
+                .includes(wall);
+        });
     }
 
-    private getMinMaxPositions(objects: AbstractObject[], axis: AxisIndex): [number, number] {
+    private isCollision(
+        axis: Axis,
+        object: AbstractObject,
+        playerPosition = this.player.position,
+        tolerance = 0
+    ) {
+        return object.position[axis] < playerPosition[axis] + Player.size - tolerance
+            && object.position[axis] + AbstractWall.size - tolerance > playerPosition[axis];
+    }
+
+    private correctPositionForCollisions(originalPlayerLocation: Point, solidCollisions: SolidWall[]) {
+        const xAlreadyCollided = solidCollisions.some(c => this.isCollision(Axis.X, c, originalPlayerLocation));
+        const yAlreadyCollided = solidCollisions.some(c => this.isCollision(Axis.Y, c, originalPlayerLocation));
+
+        if (xAlreadyCollided && yAlreadyCollided) {
+            // ramming into a corner diagonally (ex: corner: |_ direction: ↙)
+            this.player.position = originalPlayerLocation;
+            return;
+        }
+
+        let newCollisionAxis;
+        if (xAlreadyCollided) {
+            newCollisionAxis = Axis.Y;
+        } else if (yAlreadyCollided) {
+            newCollisionAxis = Axis.X;
+        } else if (this.direction !== null) {
+            newCollisionAxis = this.direction;
+        } else {
+            // There is no option but to have SOME sort of bias, we just try our best to avoid this
+            newCollisionAxis = Axis.X;
+        }
+
+        const alreadyCollidingAxis: Axis = Math.abs(newCollisionAxis - 1);
+        const tolerance = 32; // we might consider being more lenient
+
+        const movingInBothDirections = originalPlayerLocation[Axis.X] !== this.player.x && originalPlayerLocation[Axis.Y] !== this.player.y;
+
+        // Switch axis if direction is allowed when tolerant
+        const switchCorrectionAxis = !movingInBothDirections && solidCollisions.every(
+            c => !this.isCollision(alreadyCollidingAxis, c, originalPlayerLocation, tolerance)
+        );
+        const axisToCorrect = switchCorrectionAxis ? alreadyCollidingAxis : newCollisionAxis;
+        console.log(axisToCorrect === Axis.X ? 'X' : 'Y');
+        this.correctAxis(originalPlayerLocation, solidCollisions, axisToCorrect);
+    }
+
+    private correctAxis(originalPlayerLocation: Point, solidCollisions: SolidWall[], axisToCorrect: Axis) {
+        const [min, max] = this.getMinMaxPositions(solidCollisions, axisToCorrect);
+        const [moveToNegative, moveToPositive] = [min - Player.size, max + AbstractWall.size];
+
+        const cur = originalPlayerLocation[axisToCorrect];
+        let direction = cur - this.player.position[axisToCorrect];
+        if (direction === 0) {
+            // Move player in direction that is closest to current pos
+            direction = Math.abs(cur - moveToNegative) - Math.abs(cur - moveToPositive);
+        }
+
+        this.player.setPositionOnAxis(axisToCorrect, direction < 0 ? moveToNegative : moveToPositive);
+    }
+
+    private getMinMaxPositions(objects: AbstractObject[], axis: Axis): [number, number] {
         // TODO take all collisions into account (or deduce relevant ones?)
         return objects.slice(0, 1)
             .reduce((previousValue, currentValue) => {
