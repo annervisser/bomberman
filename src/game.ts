@@ -1,13 +1,12 @@
-import {Rectangle} from './objects/rectangle';
 import {GameData} from './utils/gameData';
 import {Sprites} from './utils/spriteStore';
 import {Player} from './objects/player';
 import {AbstractWall, DestructibleBlock, GameMap, SolidWall} from "./objects/gameMap";
 import {AbstractObject, Axis, Point} from "./objects/interfaces/abstractObject";
+import {Bomb} from "./objects/bomb";
 
 export class Game {
     private readonly ctx: CanvasRenderingContext2D;
-    private rect = new Rectangle(10, 10, 20, 5);
     private gameData: GameData = new GameData();
     private player!: Player;
     private pressedKeys = new Set<string>();
@@ -79,7 +78,23 @@ export class Game {
         'KeyS': (a) => this.player.y += a,
         'KeyA': (a) => this.player.x -= a,
         'KeyD': (a) => this.player.x += a,
+        'Space': () => {
+            if (this.bombBlocked) {
+                return;
+            }
+            this.bombBlocked = true;
+            // TODO handle debouncing better (or dont debounce, but disallow double bombs & limit amount)
+            setTimeout(() => this.bombBlocked = false, 500);
+            const size = AbstractWall.size;
+            const bombPos: Point = [
+                Math.round(this.player.x / size) * size,
+                Math.round(this.player.y / size) * size
+            ];
+            this.map.bombs.push(new Bomb(bombPos));
+        }
     }
+
+    private bombBlocked = false;
 
     private direction: Axis | null = null;
 
@@ -104,34 +119,19 @@ export class Game {
         }
 
         this.ctx.clearRect(0, 0, ...this.size);
-        this.rect.draw(this.ctx, deltaT);
-
-        this.map.walls.forEach(w => w.draw(this.ctx, deltaT));
-
+        this.map.draw(this.ctx, deltaT)
         this.player.draw(this.ctx, deltaT);
     }
 
     /** TODO The whole collision detection needs a lot of cleanup. Having a bbox instead of position and size might help*/
     private checkCollision(originalPlayerLocation: [number, number]) {
-        const allCollisions = this.map.walls.filter(
-            value => this.isCollision(Axis.X, value) && this.isCollision(Axis.Y, value)
-        );
+        const collisions = this.map.walls
+            .filter(wall => !(wall instanceof DestructibleBlock))
+            .filter(wall => this.isCollision(Axis.X, wall) && this.isCollision(Axis.Y, wall));
 
-        const solidCollisions = allCollisions.filter(wall => !(wall instanceof DestructibleBlock));
-        const destructibleCollisions = allCollisions.filter(wall => wall instanceof DestructibleBlock);
-
-        if (solidCollisions.length) {
-            this.correctPositionForCollisions(originalPlayerLocation, solidCollisions);
+        if (collisions.length) {
+            this.correctPositionForCollisions(originalPlayerLocation, collisions);
         }
-
-        // Remove destructible walls on collision
-        // TODO remove this when bombs are a thing
-        this.map.walls = this.map.walls.filter((wall) => {
-            return !destructibleCollisions
-                // Only if we're still colliding after position changes
-                .filter(wall => this.isCollision(Axis.X, wall) && this.isCollision(Axis.Y, wall))
-                .includes(wall);
-        });
     }
 
     private isCollision(
@@ -176,7 +176,6 @@ export class Game {
             c => !this.isCollision(alreadyCollidingAxis, c, originalPlayerLocation, tolerance)
         );
         const axisToCorrect = switchCorrectionAxis ? alreadyCollidingAxis : newCollisionAxis;
-        console.log(axisToCorrect === Axis.X ? 'X' : 'Y');
         this.correctAxis(originalPlayerLocation, solidCollisions, axisToCorrect);
     }
 

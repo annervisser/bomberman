@@ -1,7 +1,7 @@
-import {AbstractObject} from "./interfaces/abstractObject";
+import {AbstractObject, Axis, Point} from "./interfaces/abstractObject";
+import {Bomb} from "./bomb";
 
 export abstract class AbstractWall extends AbstractObject {
-    abstract destructible = false;
     abstract fillStyle: string;
     static readonly size = 64;
 
@@ -16,38 +16,72 @@ export abstract class AbstractWall extends AbstractObject {
 }
 
 export class SolidWall extends AbstractWall {
-    destructible = false;
     fillStyle = 'red';
 }
 
 export class DestructibleBlock extends AbstractWall {
-    destructible = true;
     fillStyle = 'yellow';
 }
 
-type WallType = typeof SolidWall | typeof DestructibleBlock;
+export type Wall = SolidWall | DestructibleBlock;
+export type WallType = typeof SolidWall | typeof DestructibleBlock;
 
 export class GameMap {
-    walls: Array<SolidWall | DestructibleBlock> = [];
+    walls: Array<Wall> = [];
+    bombs: Array<Bomb> = [];
 
     constructor() {
-        const map = GameMap.getMap();
-
-        let x;
-        let y = 0;
         const size = AbstractWall.size;
-        for (const mapRow of map) {
-            x = 0;
-            for (const mapBlock of mapRow) {
-                if (mapBlock) {
-                    const w = new mapBlock(x, y);
+        GameMap.getMap()
+            .forEach((row, y) => {
+                row.forEach((block, x) => {
+                    if (!block) return;
+                    const w = new block(x * size, y * size);
                     this.walls.push(w);
-                }
-                x += size;
-            }
-            y += size;
-        }
+                })
+            })
+    }
 
+    public draw(ctx: CanvasRenderingContext2D, deltaT: number): void {
+        this.walls.forEach(w => w.draw(ctx, deltaT));
+        this.bombs.forEach(b => {
+            b.draw(ctx, deltaT);
+            if (b.state === 'exploding') {
+                this.handleExplosion(b, ctx);
+            }
+        });
+        this.bombs = this.bombs.filter(b => b.state !== 'expired');
+    }
+
+    private handleExplosion(bomb: Bomb, ctx: CanvasRenderingContext2D) {
+        // TODO this needs cleanup
+        const wallsToRemove: Wall[] = [];
+        const size = AbstractWall.size;
+        ctx.fillStyle = 'orange';
+        for (const direction of [-size, size]) {
+            for (const axis of [Axis.X, Axis.Y]) {
+                const searchPos: Point = [...bomb.position];
+                for (let i = 0; i < bomb.range; i++) {
+                    searchPos[axis] += direction;
+                    const wallAtLocation = this.getWallAtLocation(searchPos);
+                    if (wallAtLocation instanceof DestructibleBlock) {
+                        wallsToRemove.push(wallAtLocation)
+                    } else if (wallAtLocation instanceof SolidWall) {
+                        break;
+                    }
+                    ctx.fillRect(...searchPos, size, size)
+                }
+            }
+        }
+        this.walls = this.walls.filter(w => !wallsToRemove.includes(w));
+    }
+
+    /**
+     * TODO This is ugly and definitely not performant, switch to storing the map indexed by coordinates
+     * @param location
+     */
+    public getWallAtLocation(location: Point): Wall | undefined {
+        return this.walls.find(w => w.position.join() === location.join());
     }
 
     private static getMap() {
@@ -58,13 +92,13 @@ export class GameMap {
         const map: Array<Array<WallType | null>> = [
             [H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H],
             [H, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, H],
-            [H, _, H, x, H, x, H, x, H, x, H, x, H, x, H, x, H, x, H, _, H],
-            [H, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, H],
-            [H, _, H, x, H, x, H, x, H, x, H, x, H, x, H, x, H, x, H, _, H],
-            [H, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, H],
-            [H, _, H, x, H, x, H, x, H, x, H, x, H, x, H, x, H, x, H, _, H],
-            [H, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, H],
-            [H, _, H, x, H, x, H, x, H, x, H, x, H, x, H, x, H, x, H, _, H],
+            [H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H],
+            [H, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, H],
+            [H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H],
+            [H, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, H],
+            [H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H],
+            [H, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, H],
+            [H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H],
             [H, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, H],
             [H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H],
         ];
