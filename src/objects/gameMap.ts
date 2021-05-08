@@ -1,5 +1,6 @@
 import {AbstractObject, Axis, Point} from "./interfaces/abstractObject";
 import {Bomb} from "./bomb";
+import {PositionMap} from "./positionMap";
 
 export abstract class AbstractWall extends AbstractObject {
     abstract fillStyle: string;
@@ -27,7 +28,9 @@ export type Wall = SolidWall | DestructibleBlock;
 export type WallType = typeof SolidWall | typeof DestructibleBlock;
 
 export class GameMap {
-    walls: Array<Wall> = [];
+    public walls = new PositionMap<Wall>();
+    public static TileSize = 64;
+
     bombs: Array<Bomb> = [];
 
     constructor() {
@@ -37,7 +40,7 @@ export class GameMap {
                 row.forEach((block, x) => {
                     if (!block) return;
                     const w = new block(x * size, y * size);
-                    this.walls.push(w);
+                    this.walls.set(x, y, w);
                 })
             })
     }
@@ -54,34 +57,22 @@ export class GameMap {
     }
 
     private handleExplosion(bomb: Bomb, ctx: CanvasRenderingContext2D) {
-        // TODO this needs cleanup
-        const wallsToRemove: Wall[] = [];
-        const size = AbstractWall.size;
         ctx.fillStyle = 'orange';
-        for (const direction of [-size, size]) {
+        for (const direction of [-1, 1]) {
             for (const axis of [Axis.X, Axis.Y]) {
                 const searchPos: Point = [...bomb.position];
                 for (let i = 0; i < bomb.range; i++) {
                     searchPos[axis] += direction;
-                    const wallAtLocation = this.getWallAtLocation(searchPos);
+                    const wallAtLocation = this.walls.get(...searchPos);
                     if (wallAtLocation instanceof DestructibleBlock) {
-                        wallsToRemove.push(wallAtLocation)
+                        this.walls.delete(...searchPos);
                     } else if (wallAtLocation instanceof SolidWall) {
                         break;
                     }
-                    ctx.fillRect(...searchPos, size, size)
+                    ctx.fillRect(searchPos[0] * 64, searchPos[1] * 64, 64, 64)
                 }
             }
         }
-        this.walls = this.walls.filter(w => !wallsToRemove.includes(w));
-    }
-
-    /**
-     * TODO This is ugly and definitely not performant, switch to storing the map indexed by coordinates
-     * @param location
-     */
-    public getWallAtLocation(location: Point): Wall | undefined {
-        return this.walls.find(w => w.position.join() === location.join());
     }
 
     private static getMap() {

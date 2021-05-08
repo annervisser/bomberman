@@ -1,4 +1,5 @@
 import {AbstractObject, Point} from "./interfaces/abstractObject";
+import {GameMap} from "./gameMap";
 
 export class Bomb extends AbstractObject {
     public static fuseTime = 600;
@@ -18,7 +19,11 @@ export class Bomb extends AbstractObject {
         this.timer -= deltaT;
         ctx.fillStyle = 'green';
         ctx.beginPath();
-        ctx.arc(this.position[0] + 32, this.position[1] + 32, 64 / 2, 0, 2 * Math.PI);
+        const drawPos: [number, number] = [
+            this.position[0] * GameMap.TileSize + GameMap.TileSize / 2,
+            this.position[1] * GameMap.TileSize + GameMap.TileSize / 2,
+        ];
+        ctx.arc(...drawPos, GameMap.TileSize / 2, 0, 2 * Math.PI);
         ctx.fill();
     }
 

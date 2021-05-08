@@ -87,8 +87,8 @@ export class Game {
             setTimeout(() => this.bombBlocked = false, 500);
             const size = AbstractWall.size;
             const bombPos: Point = [
-                Math.round(this.player.x / size) * size,
-                Math.round(this.player.y / size) * size
+                Math.round(this.player.x / size),
+                Math.round(this.player.y / size)
             ];
             this.map.bombs.push(new Bomb(bombPos));
         }
@@ -125,7 +125,7 @@ export class Game {
 
     /** TODO The whole collision detection needs a lot of cleanup. Having a bbox instead of position and size might help*/
     private checkCollision(originalPlayerLocation: [number, number]) {
-        const collisions = this.map.walls
+        const collisions = Array.from(this.map.walls)
             .filter(wall => !(wall instanceof DestructibleBlock))
             .filter(wall => this.isCollision(Axis.X, wall) && this.isCollision(Axis.Y, wall));
 
