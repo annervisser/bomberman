@@ -8,7 +8,7 @@ export abstract class AbstractWall extends AbstractObject {
 
     draw(ctx: CanvasRenderingContext2D, deltaT: number): void {
         ctx.fillStyle = this.fillStyle;
-        ctx.fillRect(...this.position, AbstractWall.size, AbstractWall.size);
+        ctx.fillRect(this.position[0], this.position[1], AbstractWall.size, AbstractWall.size);
     }
 
     constructor(x: number, y: number) {

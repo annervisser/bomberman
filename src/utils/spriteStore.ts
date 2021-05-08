@@ -1,5 +1,4 @@
 import {Sprite} from './image';
-import spriteUrl from '/assets/sprites/8x8.png';
 
 export enum Sprites {
     Heart,
@@ -16,14 +15,14 @@ export const spriteLocations: {
     }
 } = {
     [Sprites.Heart]: {
-        file: spriteUrl,
+        file: '/sprites/8x8.png',
         x: 40,
         y: 40,
         width: 8,
         height: 8
     },
     [Sprites.SolidBlue]: {
-        file: spriteUrl,
+        file: '/sprites/8x8.png',
         x: 5,
         y: 65,
         width: 8,

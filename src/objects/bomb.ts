@@ -18,11 +18,9 @@ export class Bomb extends AbstractObject {
         this.timer -= deltaT;
         ctx.fillStyle = 'green';
         ctx.beginPath();
-        const drawPos: [number, number] = [
-            this.position[0] * GameMap.TileSize + GameMap.TileSize / 2,
-            this.position[1] * GameMap.TileSize + GameMap.TileSize / 2,
-        ];
-        ctx.arc(...drawPos, GameMap.TileSize / 2, 0, 2 * Math.PI);
+        const drawPosX = this.position[0] * GameMap.TileSize + GameMap.TileSize / 2;
+        const drawPosY = this.position[1] * GameMap.TileSize + GameMap.TileSize / 2;
+        ctx.arc(drawPosX, drawPosY, GameMap.TileSize / 2, 0, 2 * Math.PI);
         ctx.fill();
     }
 

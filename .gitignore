@@ -3,5 +3,6 @@ node_modules
 dist
 dist-ssr
 *.local
+.tscc_temp
 
 /.idea/

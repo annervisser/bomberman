@@ -25,6 +25,7 @@
     "no-unused-vars": "off"
   },
   "ignorePatterns": [
-    "/dist/**"
+    "/dist/**",
+    "*.js"
   ]
 }

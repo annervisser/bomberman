@@ -1,4 +1,5 @@
 import viteImagemin from 'vite-plugin-imagemin';
+import tscc from '@tscc/rollup-plugin-tscc';
 
 /** @type {import('vite-plugin-imagemin').VitePluginImageMin} */
 let imageMinConfig = {
@@ -10,6 +11,7 @@ let imageMinConfig = {
  */
 const config = {
     build: {
+        outDir: "dist/",
         terserOptions: {
             mangle: {
                 properties: false
@@ -21,6 +23,9 @@ const config = {
         assetsInlineLimit: 0
     },
     plugins: [
+        tscc({
+            specFile: "./tscc.spec.json"
+        }),
         viteImagemin(imageMinConfig)
     ]
 }

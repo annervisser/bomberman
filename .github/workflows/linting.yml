@@ -31,5 +31,16 @@ jobs:
       - name: ESLint
         run: npx eslint .
 
-      - name: Run vite build
+      - name: Run build
         run: npm run build
+
+      - name: Check tscc bundle size
+        run: |
+          BUNDLE_FILESIZE=$(stat -c%s "./dist/game.js")
+          MAX_SIZE=10000
+          if [ "$BUNDLE_FILESIZE" -gt "$MAX_SIZE" ]; then
+            echo "Bundle size ($BUNDLE_FILESIZE) is larger than allowed ($MAX_SIZE)"
+            exit 1
+          else
+            echo "Bundle size is within limits: $BUNDLE_FILESIZE"
+          fi
