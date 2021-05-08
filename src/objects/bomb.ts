@@ -7,15 +7,14 @@ export class Bomb extends AbstractObject {
 
     public timer = Bomb.fuseTime;
     public range = 3;
+    public playerHasLetGo = false; // we dont want to push bombs until we've "untouched" them
+    public velocity: Point | null = null;
 
     constructor(position: Point) {
         super(...position);
     }
 
     draw(ctx: CanvasRenderingContext2D, deltaT: number): void {
-        if (this.state === 'expired') {
-            return;
-        }
         this.timer -= deltaT;
         ctx.fillStyle = 'green';
         ctx.beginPath();

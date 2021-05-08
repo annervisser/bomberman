@@ -31,7 +31,7 @@ export class GameMap {
     public walls = new PositionMap<Wall>();
     public static TileSize = 64;
 
-    bombs: Array<Bomb> = [];
+    bombs: Set<Bomb> = new Set<Bomb>();
 
     constructor() {
         const size = AbstractWall.size;
@@ -47,16 +47,46 @@ export class GameMap {
 
     public draw(ctx: CanvasRenderingContext2D, deltaT: number): void {
         this.walls.forEach(w => w.draw(ctx, deltaT));
-        this.bombs.forEach(b => {
-            b.draw(ctx, deltaT);
-            if (b.state === 'exploding') {
-                this.handleExplosion(b, ctx);
+        for (const bomb of this.bombs) {
+            switch (bomb.state) {
+                case 'fused':
+                    if (bomb.velocity) {
+                        this.handleBombGliding(bomb, deltaT);
+                    }
+                    break;
+                case 'exploding':
+                    this.handleExplosion(bomb, ctx);
+                    break;
+                case 'expired':
+                    this.bombs.delete(bomb);
+                    continue;
             }
-        });
-        this.bombs = this.bombs.filter(b => b.state !== 'expired');
+            bomb.draw(ctx, deltaT);
+        }
+    }
+
+    private handleBombGliding(bomb: Bomb, deltaT: number) {
+        const originalPosition = [...bomb.position];
+        if (bomb.velocity) {
+            const velocity = bomb.velocity;
+            bomb.position = <Point>bomb.position.map(
+                (value, index) => value + velocity[index] * deltaT * .02
+            );
+        }
+        const searchPos: Point = <Point>bomb.position.map(v => Math.round(v)); // TODO this should be floor/ceil based in velocity
+        const wallAtLocation = this.walls.get(...searchPos);
+        if (wallAtLocation) {
+            bomb.position = <Point>originalPosition.map(v => Math.round(v)); // TODO this should be floor/ceil based in velocity
+            bomb.velocity = null;
+        }
     }
 
     private handleExplosion(bomb: Bomb, ctx: CanvasRenderingContext2D) {
+        bomb.position = [ // TODO this should be floor/ceil based in velocity
+            Math.round(bomb.position[0]),
+            Math.round(bomb.position[1]),
+        ]
+
         ctx.fillStyle = 'orange';
         for (const direction of [-1, 1]) {
             for (const axis of [Axis.X, Axis.Y]) {

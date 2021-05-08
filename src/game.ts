@@ -1,7 +1,7 @@
 import {GameData} from './utils/gameData';
 import {Sprites} from './utils/spriteStore';
 import {Player} from './objects/player';
-import {AbstractWall, DestructibleBlock, GameMap, SolidWall} from "./objects/gameMap";
+import {AbstractWall, GameMap, SolidWall} from "./objects/gameMap";
 import {AbstractObject, Axis, Point} from "./objects/interfaces/abstractObject";
 import {Bomb} from "./objects/bomb";
 
@@ -90,7 +90,7 @@ export class Game {
                 Math.round(this.player.x / size),
                 Math.round(this.player.y / size)
             ];
-            this.map.bombs.push(new Bomb(bombPos));
+            this.map.bombs.add(new Bomb(bombPos));
         }
     }
 
@@ -104,7 +104,10 @@ export class Game {
         this.pressedKeys.forEach((k) => this.keyMap[k]?.(10))
 
         if (originalPlayerLocation.join() !== this.player.position.join()) {
-            this.checkCollision(originalPlayerLocation);
+            this.checkWallCollisions(originalPlayerLocation);
+        }
+        if (originalPlayerLocation.join() !== this.player.position.join()) {
+            this.checkBombCollisions(originalPlayerLocation);
         }
 
         this.direction = null;
@@ -124,9 +127,8 @@ export class Game {
     }
 
     /** TODO The whole collision detection needs a lot of cleanup. Having a bbox instead of position and size might help*/
-    private checkCollision(originalPlayerLocation: [number, number]) {
+    private checkWallCollisions(originalPlayerLocation: Point) {
         const collisions = Array.from(this.map.walls)
-            .filter(wall => !(wall instanceof DestructibleBlock))
             .filter(wall => this.isCollision(Axis.X, wall) && this.isCollision(Axis.Y, wall));
 
         if (collisions.length) {
@@ -134,9 +136,40 @@ export class Game {
         }
     }
 
+    private checkBombCollisions(originalPlayerLocation: Point) {
+        const collisions: Bomb[] = [];
+        for (const bomb of this.map.bombs) {
+            // convert tile-based to coordinate based
+            const position: Point = [bomb.x * GameMap.TileSize, bomb.y * GameMap.TileSize];
+            if (this.isCollision(Axis.X, {position}) && this.isCollision(Axis.Y, {position})) {
+                collisions.push(bomb);
+
+            } else if (!bomb.playerHasLetGo) {
+                bomb.playerHasLetGo = true;
+            }
+        }
+
+        for (const collision of collisions) {
+            if (!collision.playerHasLetGo) {
+                continue;
+            }
+            const deltaPos: Point = [
+                originalPlayerLocation[Axis.X] - this.player.x,
+                originalPlayerLocation[Axis.Y] - this.player.y
+            ];
+
+            const correctionAxis =
+                Math.abs(deltaPos[Axis.Y]) > Math.abs(deltaPos[Axis.X]) ? Axis.Y : Axis.X;
+            const velocity: Point = [0, 0];
+            velocity[correctionAxis] = deltaPos[correctionAxis] > 0 ? -1 : 1;
+            collision.velocity = velocity;
+        }
+
+    }
+
     private isCollision(
         axis: Axis,
-        object: AbstractObject,
+        object: { position: Point },
         playerPosition = this.player.position,
         tolerance = 0
     ) {
@@ -181,7 +214,9 @@ export class Game {
 
     private correctAxis(originalPlayerLocation: Point, solidCollisions: SolidWall[], axisToCorrect: Axis) {
         const [min, max] = this.getMinMaxPositions(solidCollisions, axisToCorrect);
-        const [moveToNegative, moveToPositive] = [min - Player.size, max + AbstractWall.size];
+        const
+            moveToNegative = min - Player.size,
+            moveToPositive = max + AbstractWall.size;
 
         const cur = originalPlayerLocation[axisToCorrect];
         let direction = cur - this.player.position[axisToCorrect];
