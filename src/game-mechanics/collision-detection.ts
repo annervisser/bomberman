@@ -83,10 +83,10 @@ export function checkBombCollisions(
     }
 
     for (const collision of collisions) {
-        if (!collision.playerHasLetGo) {
+        const deltaPos: Point = getDistance(originalPosition, newPosition);
+        if (!collision.playerHasLetGo || deltaPos[0] === deltaPos[1]) {
             continue;
         }
-        const deltaPos: Point = getDistance(originalPosition, newPosition);
 
         const correctionAxis =
             Math.abs(deltaPos[Axis.Y]) > Math.abs(deltaPos[Axis.X]) ? Axis.Y : Axis.X;
