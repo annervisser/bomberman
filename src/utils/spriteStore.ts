@@ -6,7 +6,7 @@ export enum Sprites {
 }
 
 export const spriteLocations: {
-    [key in Sprites]: {
+    [key: number]: {
         file: string;
         x: number;
         width: number;
