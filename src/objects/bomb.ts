@@ -1,12 +1,12 @@
-import {AbstractObject, Point} from "./interfaces/abstractObject";
-import {GameMap} from "./gameMap";
+import {AbstractObject, Point} from "./abstract-object";
+import {GameMap} from "./game-map";
 
 export class Bomb extends AbstractObject {
-    public static fuseTime = 600;
+    public static fuseTime = 1200;
     public static explosionTime = 400;
 
     public timer = Bomb.fuseTime;
-    public range = 3;
+    public range = 30;
     public playerHasLetGo = false; // we dont want to push bombs until we've "untouched" them
     public velocity: Point | null = null;
 

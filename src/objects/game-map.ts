@@ -1,31 +1,7 @@
-import {AbstractObject, Axis, Point} from "./interfaces/abstractObject";
+import {Axis, Point} from "./abstract-object";
 import {Bomb} from "./bomb";
-import {PositionMap} from "./positionMap";
-
-export abstract class AbstractWall extends AbstractObject {
-    abstract fillStyle: string;
-    static readonly size = 64;
-
-    draw(ctx: CanvasRenderingContext2D, deltaT: number): void {
-        ctx.fillStyle = this.fillStyle;
-        ctx.fillRect(this.position[0], this.position[1], AbstractWall.size, AbstractWall.size);
-    }
-
-    constructor(x: number, y: number) {
-        super(x, y);
-    }
-}
-
-export class SolidWall extends AbstractWall {
-    fillStyle = 'red';
-}
-
-export class DestructibleBlock extends AbstractWall {
-    fillStyle = 'yellow';
-}
-
-export type Wall = SolidWall | DestructibleBlock;
-export type WallType = typeof SolidWall | typeof DestructibleBlock;
+import {PositionMap} from "../util/position-map";
+import {AbstractWall, DestructibleBlock, SolidWall, Wall, WallType} from "./wall";
 
 export class GameMap {
     public walls = new PositionMap<Wall>();
@@ -66,25 +42,33 @@ export class GameMap {
     }
 
     private handleBombGliding(bomb: Bomb, deltaT: number) {
-        const originalPosition = [...bomb.position];
-        if (bomb.velocity) {
-            const velocity = bomb.velocity;
-            bomb.position = <Point>bomb.position.map(
-                (value, index) => value + velocity[index] * deltaT * .02
-            );
+        if (!bomb.velocity) {
+            return;
         }
-        const searchPos: Point = <Point>bomb.position.map(v => Math.round(v)); // TODO this should be floor/ceil based in velocity
+        const originalPosition = [...bomb.position];
+        const velocity = bomb.velocity;
+        bomb.position = <Point>bomb.position.map(
+            (value, index) => value + velocity[index] * deltaT * .02
+        );
+        const roundFn = Math.min(...bomb.velocity) < 0 ? Math.floor : Math.ceil;
+
+        const searchPos: Point = <Point>bomb.position.map(v => roundFn(v));
         const wallAtLocation = this.walls.get(...searchPos);
         if (wallAtLocation) {
-            bomb.position = <Point>originalPosition.map(v => Math.round(v)); // TODO this should be floor/ceil based in velocity
+            bomb.position = <Point>originalPosition.map(v => roundFn(v));
             bomb.velocity = null;
         }
     }
 
     private handleExplosion(bomb: Bomb, ctx: CanvasRenderingContext2D) {
-        bomb.position = [ // TODO this should be floor/ceil based in velocity
-            Math.round(bomb.position[0]),
-            Math.round(bomb.position[1]),
+        let roundFn = Math.round;
+        if (bomb.velocity) {
+            roundFn = Math.min(...bomb.velocity) < 0 ? Math.floor : Math.ceil;
+        }
+
+        bomb.position = [
+            roundFn(bomb.position[0]),
+            roundFn(bomb.position[1]),
         ]
 
         ctx.fillStyle = 'orange';

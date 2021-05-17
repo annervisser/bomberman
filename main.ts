@@ -1,5 +1,6 @@
 import {Game} from './src/game';
 
 window.addEventListener('load', () => {
-    new Game(<HTMLCanvasElement>document.querySelector('#canvasEl'));
+    const canvasEl = <HTMLCanvasElement>document.querySelector('#canvasEl');
+    new Game(canvasEl);
 });

@@ -1,4 +1,4 @@
-import {Point} from "./interfaces/abstractObject";
+import {Point} from "../objects/abstract-object";
 
 type pointAsScalar = string;
 

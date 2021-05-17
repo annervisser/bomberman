@@ -1,4 +1,4 @@
-import {Sprite} from './image';
+import {Sprite} from './sprite';
 
 export enum Sprites {
     Heart,
@@ -35,7 +35,7 @@ export class SpriteStore {
 
     private sprites = new Map<Sprites, Sprite>();
 
-    loadSprite(spriteName: Sprites): void {
+    loadSprite(spriteName: Sprites): this {
         if (this.loadingSprites.has(spriteName) || this.sprites.has(spriteName)) {
             throw Error('This sprite is already loading or loaded');
         }
@@ -51,6 +51,7 @@ export class SpriteStore {
             });
 
         this.loadingSprites.set(spriteName, spritePromise);
+        return this;
     }
 
     getSprite(spriteName: Sprites): Sprite {
