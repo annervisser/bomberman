@@ -1,8 +1,9 @@
-import {AbstractObject, Axis, Point} from "../objects/abstract-object";
+import {AbstractObject, Axis} from "../objects/abstract-object";
 import {Player} from "../objects/player";
 import {GameMap} from "../objects/game-map";
 import {Bomb} from "../objects/bomb";
 import {AbstractWall} from "../objects/wall";
+import {Point} from "../util/point";
 
 /** TODO The whole collision detection needs a lot of cleanup. Having a bbox instead of position and size might help*/
 let directionBias: Axis | null = null;
@@ -94,7 +95,16 @@ export function checkBombCollisions(
         velocity[correctionAxis] = deltaPos[correctionAxis] > 0 ? -1 : 1;
         collision.velocity = velocity;
     }
+}
 
+export function checkExplosionCollision(
+    playerPosition: { position: Point },
+    explosionPosition: Point,
+): boolean {
+    return isCollision(playerPosition, [
+        explosionPosition[0] * 64,
+        explosionPosition[1] * 64,
+    ]);
 }
 
 function getDistance(pointA: Point, pointB: Point): Point {

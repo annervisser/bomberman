@@ -1,4 +1,4 @@
-export type Point = [number, number];
+import {Point} from "../util/point";
 
 export enum Axis {
     X = 0,

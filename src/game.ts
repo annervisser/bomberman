@@ -1,6 +1,6 @@
 import {Sprites, SpriteStore} from "./graphics/sprite-store";
 import {Input} from "./game-mechanics/input";
-import {EventBus, GameEventType} from "./game-mechanics/events";
+import {EventBus, GameEventType, PlayerDeathEvent} from "./game-mechanics/events";
 import {Player} from "./objects/player";
 import * as PlayerMovement from "./game-mechanics/player-movement";
 import * as CollisionDetection from "./game-mechanics/collision-detection";
@@ -16,7 +16,7 @@ export class Game {
     private readonly input = new Input(this.eventBus)
 
     private player!: Player;
-    private map = new GameMap();
+    private map = new GameMap(this.eventBus);
 
     private get size(): Point {
         return [this.ctx.canvas.width, this.ctx.canvas.height];
@@ -51,6 +51,10 @@ export class Game {
         this.player = new Player(64, 64, this.spriteStore)
 
         this.eventBus.subscribe((event) => {
+            if ('playerId' in event && event.playerId === 'current') {
+                event.playerId = this.player.id;
+            }
+
             if (event.type !== GameEventType.PlayerMove) {
                 return;
             }
@@ -78,6 +82,22 @@ export class Game {
                 case GameEventType.BombPlaced:
                     this.map.bombs.add(new Bomb(event.position));
                     break;
+                case GameEventType.Explosion:
+                    if (!this.player.invincible
+                        && CollisionDetection.checkExplosionCollision(this.player, event.position)
+                    ) {
+                        this.eventBus.emit<PlayerDeathEvent>({
+                            type: GameEventType.PlayerDeath,
+                            bombId: event.bombId,
+                            playerId: event.playerId
+                        });
+                    }
+                    break;
+                case GameEventType.PlayerDeath:
+                    this.player.invincible = new Date().getTime();
+                    this.player.position = <Point>this.player.spawn.map((n) => n * GameMap.TileSize);
+                    break;
+
             }
         });
     }

@@ -1,30 +1,51 @@
-import {Point} from "../objects/abstract-object";
 import {GameInputEvent} from "./input";
+import {generateId} from "../util/id";
+import {Point} from "../util/point";
 
 export enum GameEventType {
     PlayerMove = 'playerMove',
     Input = 'input',
-    BombPlaced = 'bombPlaced'
+    BombPlaced = 'bombPlaced',
+    Explosion = 'explosion',
+    PlayerDeath = 'playerDeath',
 }
 
-export type GameEvent = PlayerMoveEvent | BombPlacedEvent | GameInputEvent;
+export type GameEvent =
+    | PlayerMoveEvent
+    | BombPlacedEvent
+    | GameInputEvent
+    | ExplosionEvent
+    | PlayerDeathEvent;
 
 export interface BaseGameEvent {
-    id?: number;
+    id?: string;
     type: GameEventType;
 }
 
 export interface PlayerMoveEvent extends BaseGameEvent {
     type: GameEventType.PlayerMove
-    playerId: number;
+    playerId: string | 'current';
     originalPosition: Point;
     position: Point;
 }
 
 export interface BombPlacedEvent extends BaseGameEvent {
     type: GameEventType.BombPlaced
-    playerId: number;
+    playerId: string | 'current';
     position: Point;
+}
+
+export interface ExplosionEvent extends BaseGameEvent {
+    type: GameEventType.Explosion
+    bombId: string;
+    playerId: string | 'current';
+    position: Point;
+}
+
+export interface PlayerDeathEvent extends BaseGameEvent {
+    type: GameEventType.PlayerDeath
+    bombId: string;
+    playerId: string | 'current';
 }
 
 export type EventHandlerFn<T extends GameEvent> = (event: T) => T | void;
@@ -63,6 +84,7 @@ export class EventBus {
 
     public emit<T extends GameEvent>(newEvent: T): void {
         let event: GameEvent = newEvent;
+        event.id = event.id ?? 'event-' + generateId();
         for (const handler of this.handlers) {
             event = handler.handle(event) || event;
         }

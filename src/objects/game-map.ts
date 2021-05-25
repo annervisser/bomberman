@@ -1,15 +1,18 @@
-import {Axis, Point} from "./abstract-object";
+import {Axis} from "./abstract-object";
 import {Bomb} from "./bomb";
 import {PositionMap} from "../util/position-map";
 import {AbstractWall, DestructibleBlock, SolidWall, Wall, WallType} from "./wall";
+import {EventBus, ExplosionEvent, GameEventType} from "../game-mechanics/events";
+import {Point} from "../util/point";
 
 export class GameMap {
     public walls = new PositionMap<Wall>();
     public static TileSize = 64;
 
     bombs: Set<Bomb> = new Set<Bomb>();
+    deaths: Set<string> = new Set<string>();
 
-    constructor() {
+    constructor(private eventBus: EventBus) {
         const size = AbstractWall.size;
         GameMap.getMap()
             .forEach((row, y) => {
@@ -17,8 +20,8 @@ export class GameMap {
                     if (!block) return;
                     const w = new block(x * size, y * size);
                     this.walls.set(x, y, w);
-                })
-            })
+                });
+            });
     }
 
     public draw(ctx: CanvasRenderingContext2D, deltaT: number): void {
@@ -72,21 +75,34 @@ export class GameMap {
         ]
 
         ctx.fillStyle = 'orange';
+        let firstRun = true;
+
         for (const direction of [-1, 1]) {
             for (const axis of [Axis.X, Axis.Y]) {
                 const searchPos: Point = [...bomb.position];
-                for (let i = 0; i < bomb.range; i++) {
-                    searchPos[axis] += direction;
+                for (let i = 0 - +firstRun; i < bomb.range; i++) {
+                    searchPos[axis] += direction * +!firstRun;
+                    firstRun = false;
                     const wallAtLocation = this.walls.get(...searchPos);
-                    if (wallAtLocation instanceof DestructibleBlock) {
-                        this.walls.delete(...searchPos);
-                    } else if (wallAtLocation instanceof SolidWall) {
+                    if (wallAtLocation instanceof SolidWall) {
                         break;
+                    }
+                    if (!bomb.exploded) {
+                        if (wallAtLocation instanceof DestructibleBlock) {
+                            this.walls.delete(...searchPos);
+                        }
+                        this.eventBus.emit<ExplosionEvent>({
+                            type: GameEventType.Explosion,
+                            position: searchPos,
+                            bombId: bomb.id,
+                            playerId: 'current'
+                        });
                     }
                     ctx.fillRect(searchPos[0] * 64, searchPos[1] * 64, 64, 64)
                 }
             }
         }
+        bomb.exploded = true;
     }
 
     private static getMap() {

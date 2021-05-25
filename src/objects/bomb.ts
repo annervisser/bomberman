@@ -1,14 +1,18 @@
-import {AbstractObject, Point} from "./abstract-object";
+import {AbstractObject} from "./abstract-object";
 import {GameMap} from "./game-map";
+import {generateId} from "../util/id";
+import {Point} from "../util/point";
 
 export class Bomb extends AbstractObject {
     public static fuseTime = 1200;
     public static explosionTime = 400;
 
+    public readonly id = 'bomb-' + generateId();
     public timer = Bomb.fuseTime;
-    public range = 30;
+    public range = 3;
     public playerHasLetGo = false; // we dont want to push bombs until we've "untouched" them
     public velocity: Point | null = null;
+    public exploded = false;
 
     constructor(position: Point) {
         super(...position);

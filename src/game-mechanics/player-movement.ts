@@ -29,7 +29,7 @@ export function handleInputEvent(event: GameInputEvent, player: Player, eventBus
             ];
             const event: BombPlacedEvent = {
                 type: GameEventType.BombPlaced,
-                playerId: 1, // TODO
+                playerId: 'current',
                 position: bombPos
             }
             eventBus.emit(event);
@@ -43,7 +43,7 @@ export function handleInputEvent(event: GameInputEvent, player: Player, eventBus
             type: GameEventType.PlayerMove,
             originalPosition: originalPosition,
             position: newPos,
-            playerId: 1 // TODO
+            playerId: 'current'
         });
     }
 }
