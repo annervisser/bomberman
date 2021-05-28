@@ -10,18 +10,9 @@ export class GameMap {
     public static TileSize = 64;
 
     bombs: Set<Bomb> = new Set<Bomb>();
-    deaths: Set<string> = new Set<string>();
 
     constructor(private eventBus: EventBus) {
-        const size = AbstractWall.size;
-        GameMap.getMap()
-            .forEach((row, y) => {
-                row.forEach((block, x) => {
-                    if (!block) return;
-                    const w = new block(x * size, y * size);
-                    this.walls.set(x, y, w);
-                });
-            });
+        this.generateMap();
     }
 
     public draw(ctx: CanvasRenderingContext2D, deltaT: number): void {
@@ -48,17 +39,17 @@ export class GameMap {
         if (!bomb.velocity) {
             return;
         }
-        const originalPosition = [...bomb.position];
+        const originalPosition = [...bomb.pos];
         const velocity = bomb.velocity;
-        bomb.position = <Point>bomb.position.map(
+        bomb.pos = <Point>bomb.pos.map(
             (value, index) => value + velocity[index] * deltaT * .02
         );
         const roundFn = Math.min(...bomb.velocity) < 0 ? Math.floor : Math.ceil;
 
-        const searchPos: Point = <Point>bomb.position.map(v => roundFn(v));
+        const searchPos: Point = <Point>bomb.pos.map(v => roundFn(v));
         const wallAtLocation = this.walls.get(...searchPos);
         if (wallAtLocation) {
-            bomb.position = <Point>originalPosition.map(v => roundFn(v));
+            bomb.pos = <Point>originalPosition.map(v => roundFn(v));
             bomb.velocity = null;
         }
     }
@@ -69,9 +60,9 @@ export class GameMap {
             roundFn = Math.min(...bomb.velocity) < 0 ? Math.floor : Math.ceil;
         }
 
-        bomb.position = [
-            roundFn(bomb.position[0]),
-            roundFn(bomb.position[1]),
+        bomb.pos = [
+            roundFn(bomb.pos[0]),
+            roundFn(bomb.pos[1]),
         ]
 
         ctx.fillStyle = 'orange';
@@ -92,19 +83,17 @@ export class GameMap {
 
     private getExplosionArea(bomb: Bomb, callback?: (point: Point) => void) {
         let firstRun = true;
-        bomb.explosionArea = bomb.explosionArea ?? [];
+        bomb.explosionArea = [];
 
         for (const direction of [-1, 1]) {
             for (const axis of [Axis.X, Axis.Y]) {
-                const searchPos: Point = [...bomb.position];
-                for (let i = 0 - +firstRun; i < bomb.range; i++) {
+                const searchPos: Point = [...bomb.pos];
+                for (let i = -firstRun; i < bomb.range; i++) {
                     searchPos[axis] += direction * +!firstRun;
                     firstRun = false;
-                    const wallAtLocation = this.walls.get(...searchPos);
-                    if (wallAtLocation instanceof SolidWall) {
+                    if (this.walls.get(...searchPos) instanceof SolidWall) {
                         break;
-                    }
-                    if (wallAtLocation instanceof DestructibleBlock) {
+                    } else {
                         this.walls.delete(...searchPos);
                     }
                     bomb.explosionArea.push([...searchPos]);
@@ -114,24 +103,35 @@ export class GameMap {
         }
     }
 
-    private static getMap() {
-        const _ = null;
-        const x = DestructibleBlock;
-        const H = SolidWall;
+    private generateMap() {
+        const blockTypeMapping: { [key: string]: WallType } = {
+            'H': SolidWall,
+            'x': DestructibleBlock
+        };
 
-        const map: Array<Array<WallType | null>> = [
-            [H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H],
-            [H, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, H],
-            [H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H],
-            [H, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, H],
-            [H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H],
-            [H, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, H],
-            [H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H],
-            [H, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, _, x, H],
-            [H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H, _, H],
-            [H, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, H],
-            [H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H, H],
+        const map = [
+            'HHHHHHHHHHHHHHHHHHHHH',
+            'H                   H',
+            'H H H H H H H H H H H',
+            'Hx x x x x x x x x xH',
+            'H H H H H H H H H H H',
+            'Hx x x x x x x x x xH',
+            'H H H H H H H H H H H',
+            'Hx x x x x x x x x xH',
+            'H H H H H H H H H H H',
+            'H                   H',
+            'HHHHHHHHHHHHHHHHHHHHH',
         ];
-        return map;
+        const size = AbstractWall.size;
+        let y = 0;
+        for (const row of map) {
+            let x = 0;
+            for (const blockType of row) {
+                const block = blockTypeMapping[blockType];
+                if (block) this.walls.set(x, y, new block(x * size, y * size));
+                x++;
+            }
+            y++;
+        }
     }
 }

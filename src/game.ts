@@ -63,7 +63,7 @@ export class Game {
                 event.position,
                 this.map.walls
             );
-            this.player.position = event.position;
+            this.player.pos = event.position;
             return event;
         }, -100);
 
@@ -102,7 +102,7 @@ export class Game {
                     break;
                 case GameEventType.PlayerDeath:
                     this.player.invincible = new Date().getTime();
-                    this.player.position = <Point>this.player.spawn.map((n) => n * GameMap.TileSize);
+                    this.player.pos = <Point>this.player.spawn.map((n) => n * GameMap.TileSize);
                     break;
 
             }

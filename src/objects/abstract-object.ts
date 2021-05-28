@@ -6,27 +6,27 @@ export enum Axis {
 }
 
 export abstract class AbstractObject {
-    position: Point;
+    pos: Point;
 
     get x(): number {
-        return this.position[Axis.X]
+        return this.pos[Axis.X]
     }
 
     set x(value: number) {
-        this.position[Axis.X] = value
+        this.pos[Axis.X] = value
     }
 
     get y(): number {
-        return this.position[Axis.Y]
+        return this.pos[Axis.Y]
     }
 
     set y(value: number) {
-        this.position[Axis.Y] = value
+        this.pos[Axis.Y] = value
     }
 
     public abstract draw(ctx: CanvasRenderingContext2D, deltaT: number): void;
 
     protected constructor(...position: Point) {
-        this.position = position;
+        this.pos = position;
     }
 }

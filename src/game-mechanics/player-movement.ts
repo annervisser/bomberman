@@ -7,8 +7,8 @@ import {GameInputEvent} from "./input";
 let bombBlocked = false;
 
 export function handleInputEvent(event: GameInputEvent, player: Player, eventBus: EventBus): void {
-    const originalPosition: Point = [...player.position];
-    const newPos: Point = [...player.position];
+    const originalPosition: Point = [...player.pos];
+    const newPos: Point = [...player.pos];
 
     const keyMap: { [key: string]: (a: number) => void } = {
         'KeyW': (a) => newPos[1] -= a,

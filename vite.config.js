@@ -19,7 +19,7 @@ const config = {
             compress: true,
         },
         sourcemap: true,
-        chunkSizeWarningLimit: 10,
+        chunkSizeWarningLimit: 12,
         assetsInlineLimit: 0
     },
     plugins: [

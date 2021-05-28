@@ -74,7 +74,7 @@ export function checkBombCollisions(
 ): void {
     // convert tile-based to coordinate based
     const position: Point = [bomb.x * GameMap.TileSize, bomb.y * GameMap.TileSize];
-    if (!isCollision({position}, newPosition)) {
+    if (!isCollision({pos: position}, newPosition)) {
         bomb.playerHasLetGo = true;
         return;
     }
@@ -91,7 +91,7 @@ export function checkBombCollisions(
 }
 
 export function checkExplosionCollision(
-    playerPosition: { position: Point },
+    playerPosition: { pos: Point },
     explosionPosition: Point,
 ): boolean {
     return isCollision(playerPosition, [
@@ -107,19 +107,19 @@ function getDistance(pointA: Point, pointB: Point): Point {
     ];
 }
 
-function isCollision(object: { position: Point }, position: Point) {
+function isCollision(object: { pos: Point }, position: Point) {
     return isCollisionOnAxis(Axis.X, object, position)
         && isCollisionOnAxis(Axis.Y, object, position);
 }
 
 function isCollisionOnAxis(
     axis: Axis,
-    object: { position: Point },
+    object: { pos: Point },
     playerPosition: Point,
     tolerance = 0
 ): boolean {
-    return object.position[axis] < playerPosition[axis] + Player.size - tolerance
-        && object.position[axis] + GameMap.TileSize - tolerance > playerPosition[axis];
+    return object.pos[axis] < playerPosition[axis] + Player.size - tolerance
+        && object.pos[axis] + GameMap.TileSize - tolerance > playerPosition[axis];
 }
 
 function correctAxis(
@@ -148,8 +148,8 @@ function getMinMaxPositions(objects: AbstractObject[], axis: Axis): [number, num
     return objects.slice(0, 1)
         .reduce((previousValue, currentValue) => {
             return [
-                Math.min(previousValue[0], currentValue.position[axis]),
-                Math.max(previousValue[1], currentValue.position[axis])
+                Math.min(previousValue[0], currentValue.pos[axis]),
+                Math.max(previousValue[1], currentValue.pos[axis])
             ];
         }, [Number.MAX_VALUE, -1]);
 }

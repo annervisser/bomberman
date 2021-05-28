@@ -22,7 +22,7 @@ export class Player extends AbstractObject {
         }
         const a = ctx.globalAlpha;
         ctx.globalAlpha = this.invincible ? 0.5 : 1;
-        this.sprite.draw(ctx, this.position[0], this.position[1], Player.size, Player.size);
+        this.sprite.draw(ctx, this.pos[0], this.pos[1], Player.size, Player.size);
         ctx.globalAlpha = a;
     }
 }
