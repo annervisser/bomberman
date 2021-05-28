@@ -73,25 +73,32 @@ export class Game {
                     PlayerMovement.handleInputEvent(event, this.player, this.eventBus);
                     break;
                 case GameEventType.PlayerMove:
-                    CollisionDetection.checkBombCollisions(
-                        event.originalPosition,
-                        event.position,
-                        this.map.bombs.values()
-                    )
+                    for (const bomb of this.map.bombs.values()) {
+                        switch (bomb.state) {
+                            case 'fused':
+                                CollisionDetection.checkBombCollisions(
+                                    event.originalPosition,
+                                    event.position,
+                                    bomb
+                                );
+                                break;
+                            case 'exploding':
+                                if (bomb.explosionArea?.length) {
+                                    this.checkExplosionCollision(
+                                        bomb.explosionArea,
+                                        bomb.id,
+                                        this.player.id
+                                    );
+                                }
+                                break;
+                        }
+                    }
                     break;
                 case GameEventType.BombPlaced:
                     this.map.bombs.add(new Bomb(event.position));
                     break;
                 case GameEventType.Explosion:
-                    if (!this.player.invincible
-                        && CollisionDetection.checkExplosionCollision(this.player, event.position)
-                    ) {
-                        this.eventBus.emit<PlayerDeathEvent>({
-                            type: GameEventType.PlayerDeath,
-                            bombId: event.bombId,
-                            playerId: event.playerId
-                        });
-                    }
+                    this.checkExplosionCollision(event.explosionArea, event.bombId, event.playerId);
                     break;
                 case GameEventType.PlayerDeath:
                     this.player.invincible = new Date().getTime();
@@ -100,6 +107,21 @@ export class Game {
 
             }
         });
+    }
+
+    public checkExplosionCollision(explosionArea: Point[], bombId: string, playerId: string): void {
+        for (const explosionPos of explosionArea) {
+            if (!this.player.invincible
+                && CollisionDetection.checkExplosionCollision(this.player, explosionPos)
+            ) {
+                this.eventBus.emit<PlayerDeathEvent>({
+                    type: GameEventType.PlayerDeath,
+                    bombId: bombId,
+                    playerId: playerId
+                });
+                break;
+            }
+        }
     }
 
     handleAnimationFrame(time: number, prevTime = 0): void {

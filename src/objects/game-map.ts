@@ -75,7 +75,24 @@ export class GameMap {
         ]
 
         ctx.fillStyle = 'orange';
+        const drawExplosion = (pos: Point) => ctx.fillRect(pos[0] * 64, pos[1] * 64, 64, 64)
+
+        !bomb.exploded
+            ? this.getExplosionArea(bomb, drawExplosion) // This callback saves us an extra loop
+            : bomb.explosionArea.forEach(drawExplosion);
+
+        this.eventBus.emit<ExplosionEvent>({
+            type: GameEventType.Explosion,
+            explosionArea: bomb.explosionArea,
+            bombId: bomb.id,
+            playerId: 'current'
+        });
+        bomb.exploded = true;
+    }
+
+    private getExplosionArea(bomb: Bomb, callback?: (point: Point) => void) {
         let firstRun = true;
+        bomb.explosionArea = bomb.explosionArea ?? [];
 
         for (const direction of [-1, 1]) {
             for (const axis of [Axis.X, Axis.Y]) {
@@ -87,22 +104,14 @@ export class GameMap {
                     if (wallAtLocation instanceof SolidWall) {
                         break;
                     }
-                    if (!bomb.exploded) {
-                        if (wallAtLocation instanceof DestructibleBlock) {
-                            this.walls.delete(...searchPos);
-                        }
-                        this.eventBus.emit<ExplosionEvent>({
-                            type: GameEventType.Explosion,
-                            position: searchPos,
-                            bombId: bomb.id,
-                            playerId: 'current'
-                        });
+                    if (wallAtLocation instanceof DestructibleBlock) {
+                        this.walls.delete(...searchPos);
                     }
-                    ctx.fillRect(searchPos[0] * 64, searchPos[1] * 64, 64, 64)
+                    bomb.explosionArea.push([...searchPos]);
+                    callback?.(searchPos)
                 }
             }
         }
-        bomb.exploded = true;
     }
 
     private static getMap() {

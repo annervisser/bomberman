@@ -39,7 +39,7 @@ export interface ExplosionEvent extends BaseGameEvent {
     type: GameEventType.Explosion
     bombId: string;
     playerId: string | 'current';
-    position: Point;
+    explosionArea: Point[];
 }
 
 export interface PlayerDeathEvent extends BaseGameEvent {

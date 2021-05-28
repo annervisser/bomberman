@@ -70,31 +70,24 @@ export function correctPositionForCollisions(
 export function checkBombCollisions(
     originalPosition: Point,
     newPosition: Point,
-    bombs: Iterable<Bomb>
+    bomb: Bomb
 ): void {
-    const collisions: Bomb[] = [];
-    for (const bomb of bombs) {
-        // convert tile-based to coordinate based
-        const position: Point = [bomb.x * GameMap.TileSize, bomb.y * GameMap.TileSize];
-        if (isCollision({position}, newPosition)) {
-            collisions.push(bomb);
-        } else if (!bomb.playerHasLetGo) {
-            bomb.playerHasLetGo = true;
-        }
+    // convert tile-based to coordinate based
+    const position: Point = [bomb.x * GameMap.TileSize, bomb.y * GameMap.TileSize];
+    if (!isCollision({position}, newPosition)) {
+        bomb.playerHasLetGo = true;
+        return;
     }
 
-    for (const collision of collisions) {
-        const deltaPos: Point = getDistance(originalPosition, newPosition);
-        if (!collision.playerHasLetGo || deltaPos[0] === deltaPos[1]) {
-            continue;
-        }
-
-        const correctionAxis =
-            Math.abs(deltaPos[Axis.Y]) > Math.abs(deltaPos[Axis.X]) ? Axis.Y : Axis.X;
-        const velocity: Point = [0, 0];
-        velocity[correctionAxis] = deltaPos[correctionAxis] > 0 ? -1 : 1;
-        collision.velocity = velocity;
+    const deltaPos: Point = getDistance(originalPosition, newPosition);
+    if (!bomb.playerHasLetGo || deltaPos[0] === deltaPos[1]) {
+        return;
     }
+
+    const correctionAxis = Math.abs(deltaPos[Axis.Y]) > Math.abs(deltaPos[Axis.X]) ? Axis.Y : Axis.X;
+    const velocity: Point = [0, 0];
+    velocity[correctionAxis] = deltaPos[correctionAxis] > 0 ? -1 : 1;
+    bomb.velocity = velocity;
 }
 
 export function checkExplosionCollision(

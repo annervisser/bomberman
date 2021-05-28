@@ -13,6 +13,7 @@ export class Bomb extends AbstractObject {
     public playerHasLetGo = false; // we dont want to push bombs until we've "untouched" them
     public velocity: Point | null = null;
     public exploded = false;
+    public explosionArea: Point[] = [];
 
     constructor(position: Point) {
         super(...position);
