@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "rootDir": ".",
     "module": "commonjs",
     "target": "ES2020",
     "sourceMap": true,
@@ -9,6 +10,10 @@
       "vite/client"
     ]
   },
+  "include": [
+    "main.ts",
+    "src/**/*"
+  ],
   "exclude": [
     "node_modules",
     "dist"
