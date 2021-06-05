@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Bomberman</title>
+    <script type="module" src="src/main.ts"></script>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <link href="/style.css" rel="stylesheet" type="text/css">
+    <link rel="preload" as="image" href="/sprites/8x8.png">
+</head>
+<body>
+<main id="app">
+    <div>
+        <h1>BombermanJS</h1>
+        <canvas id="canvasEl"></canvas>
+        <div id="divEl">
+            <label>Connection
+                <input name="connection" id="connectionInput" type="text">
+                <button id="connectButton">Connect</button>
+            </label>
+            <label>message
+                <input name="message" id="messageInput" type="text">
+                <button id="sendButton">Send</button>
+            </label>
+            <pre id="messageOutput">
+
+            </pre>
+
+            <div style="display: flex; justify-content: space-between">
+                <label style="display: flex; justify-content: space-between; flex-direction: column">
+                    INPUT
+                    <textarea rows="16" cols="32" id="INPUTTextArea"></textarea>
+                    <button id="INPUTButton">Submit</button>
+                </label>
+                <label style="display: flex; justify-content: stretch; flex-direction: column">
+                    OUTPUT
+                    <textarea rows="16" cols="32" id="OUTPUTTextArea"></textarea>
+                </label></div>
+        </div>
+    </div>
+    <script type="module" src="/main.ts"></script>
+</main>
+</body>
+</html>
