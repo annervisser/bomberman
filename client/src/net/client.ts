@@ -10,7 +10,6 @@ export class Client extends AbstractEventTarget<WrappedInEvent<MessageResponses>
     constructor(private connection: ExternalConnection) {
         super(Object.values(MessageTypes));
         connection.addEventListener(ConnectionEvents.Message, (messageEvent) => {
-            console.log('received message:', messageEvent);
             const message = messageEvent.detail;
             if (Client.validateServerEvent(message)) {
                 const event = new CustomEvent(message.type, {

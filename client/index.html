@@ -14,31 +14,9 @@
 <main id="app">
     <div>
         <h1>BombermanJS</h1>
+        <h4 style="margin-bottom:.5rem;">Your name: <span id="playerName"></span> | Room: <span id="roomName"></span> |
+            Players: <span id="players"></span></h4>
         <canvas id="canvasEl"></canvas>
-        <div id="divEl">
-            <label>Connection
-                <input name="connection" id="connectionInput" type="text">
-                <button id="connectButton">Connect</button>
-            </label>
-            <label>message
-                <input name="message" id="messageInput" type="text">
-                <button id="sendButton">Send</button>
-            </label>
-            <pre id="messageOutput">
-
-            </pre>
-
-            <div style="display: flex; justify-content: space-between">
-                <label style="display: flex; justify-content: space-between; flex-direction: column">
-                    INPUT
-                    <textarea rows="16" cols="32" id="INPUTTextArea"></textarea>
-                    <button id="INPUTButton">Submit</button>
-                </label>
-                <label style="display: flex; justify-content: stretch; flex-direction: column">
-                    OUTPUT
-                    <textarea rows="16" cols="32" id="OUTPUTTextArea"></textarea>
-                </label></div>
-        </div>
     </div>
 </main>
 </body>

@@ -1,4 +1,5 @@
 import WebSocket, {Server} from 'ws';
+import {MessageTypes} from '../api';
 
 const wss = new Server({
     port: 8080
@@ -14,19 +15,16 @@ wss.on('connection', (socket, request) => {
     let connPeerId: string | null = null;
 
     socket.on('message', (data) => {
-        if (data === 'ping') {
-            socket.send('pong');
-        }
         console.log('received:', data);
         if (typeof data === 'string') {
             const message = JSON.parse(data);
             switch (message.type) {
-                case 'REQUEST_JOIN':
+                case MessageTypes.REQUEST_JOIN:
                     connRoomName = joinRoom(message.data, socket);
                     connPeerId = message.data.peerId;
                     break;
-                case 'SDP':
-                case 'ICE_CANDIDATE':
+                case MessageTypes.SDP:
+                case MessageTypes.ICE_CANDIDATE:
                     const data = {...message.data}
                     data.peerId = connPeerId;
                     sendData(getSocket(connRoomName, message.data.peerId), {
@@ -40,9 +38,26 @@ wss.on('connection', (socket, request) => {
     socket.on('close', () => {
         if (connRoomName && connPeerId) {
             console.log('removing peer %s from room %s', connPeerId, connRoomName);
-            rooms.get(connRoomName)?.delete(connPeerId);
+            const room = rooms.get(connRoomName);
+            room?.delete(connPeerId);
+
+            for (const socket of room?.values() ?? []) {
+                sendData(socket, {
+                    type: MessageTypes.USER_LEFT,
+                    data: {
+                        peerId: connPeerId
+                    }
+                })
+            }
+
+        } else {
+            console.log('Connection closed before joining room')
         }
     });
+
+    socket.on('error', (e) => {
+        console.log('ERR:', e.message);
+    })
 })
 
 function joinRoom(data: any, socket: WebSocket): string {
@@ -53,7 +68,7 @@ function joinRoom(data: any, socket: WebSocket): string {
     const peerIds = Array.from(room.keys());
 
     sendData(socket, {
-        type: 'JOINED_ROOM',
+        type: MessageTypes.JOINED_ROOM,
         data: {
             roomName: roomName,
             peerIds: peerIds
@@ -62,7 +77,7 @@ function joinRoom(data: any, socket: WebSocket): string {
 
     for (const socket of room.values()) {
         sendData(socket, {
-            type: 'USER_JOINED',
+            type: MessageTypes.USER_JOINED,
             data: {
                 peerId: peerId
             }
@@ -88,5 +103,5 @@ function getSocket(room: string | null, peer: string): WebSocket {
 function sendData(socket: WebSocket, data: any) {
     const json = JSON.stringify(data);
     console.log('sent:', json)
-    socket.send(json)
+    socket.send(json, (err) => err && console.error('ERR:', err))
 }

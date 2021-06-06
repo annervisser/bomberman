@@ -38,7 +38,6 @@ export class Peer extends AbstractEventTarget<Pick<WrappedInEvent<MessageRespons
     }
 
     async addIceCandidate(candidate: RTCIceCandidateInit | RTCIceCandidate): Promise<void> {
-        console.log('TODO CHECK IF NULL BEFORE SET', this.peerConnection.remoteDescription);
         if (!this.peerConnection.remoteDescription) {
             this.pendingCandidates.push(candidate);
         }
@@ -103,7 +102,6 @@ export class Peer extends AbstractEventTarget<Pick<WrappedInEvent<MessageRespons
 
         dataChannel.onopen = () => {
             this.debugLogger('Data channel open');
-            dataChannel.send('ping');
         };
 
         dataChannel.onclose = () => {
@@ -112,13 +110,6 @@ export class Peer extends AbstractEventTarget<Pick<WrappedInEvent<MessageRespons
 
         dataChannel.onmessage = (e: MessageEvent) => {
             this.debugLogger('Data channel message:', e.data);
-            if (e.data === 'ping') {
-                dataChannel.send('pong');
-            } else {
-                const text = <HTMLTextAreaElement>document.getElementById('OUTPUTTextArea');
-                text.value += e.data;
-                text.value += "\n";
-            }
         };
     }
 

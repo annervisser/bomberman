@@ -35,7 +35,12 @@ export abstract class AbstractEventTarget<Events extends Record<possibleKeys, Ev
         if (!this.isAllowedType(event.type)) {
             throw new Error('Invalid event type dispatched');
         }
-        console.log('%s: %s', this.constructor.name.toUpperCase(), event.type);
+        console.debug(
+            '%s: %s',
+            this.constructor.name.toUpperCase(),
+            event.type,
+            event instanceof CustomEvent ? event.detail : undefined
+        );
         const listeners = this.eventListeners.get(event.type) ?? [];
         for (const listener of listeners) {
             typeof listener === 'function'

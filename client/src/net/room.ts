@@ -2,17 +2,34 @@ import {Client} from './client';
 import {Peer} from './peer';
 import {generateId} from '../util/id';
 import {MessageTypes} from '@api/api';
+import {AbstractEventTarget} from './external-connection/abstract-event-target';
 
-export class Room {
+declare interface RoomEvents {
+    'joined': CustomEvent<{ roomName: string, peers: string[] }>;
+    'user_joined': CustomEvent<{ peer: string }>;
+    'user_left': CustomEvent<{ peer: string }>;
+}
+
+export class Room extends AbstractEventTarget<RoomEvents> {
+    public ownID = generateId();
+    public roomName: string;
+
+    public get peerIds(): string[] {
+        return Array.from(this.peers.keys());
+    }
+
     private peers = new Map<string, Peer>();
     private pendingSdp = new Map<string, RTCSessionDescriptionInit>();
     private pendingCandidates = new Map<string, Array<RTCIceCandidateInit | RTCIceCandidate>>();
 
-    constructor(private client: Client) {
+    constructor(private client: Client, roomName: string) {
+        super(['joined', 'user_joined', 'user_left']);
+
+        this.roomName = roomName;
         this.addEventListeners();
         this.client.send(MessageTypes.REQUEST_JOIN, {
-            'peerId': generateId(),
-            'roomName': 'room'
+            'peerId': this.ownID,
+            'roomName': this.roomName
         });
     }
 
@@ -25,7 +42,7 @@ export class Room {
             if (peer) {
                 peer.setSdp(sdp);
             } else {
-                console.log('adding pending sdp');
+                console.debug('adding pending sdp');
                 this.pendingSdp.set(peerId, sdp);
             }
         });
@@ -37,7 +54,7 @@ export class Room {
             if (peer) {
                 void peer.addIceCandidate(candidate).catch();
             } else {
-                console.log('adding pending candidate');
+                console.debug('adding pending candidate');
                 const pendingCandidates = this.pendingCandidates.get(peerId) ?? [];
                 pendingCandidates.push(candidate);
                 this.pendingCandidates.set(peerId, pendingCandidates);
@@ -45,17 +62,27 @@ export class Room {
         });
 
         this.client.addEventListener(MessageTypes.JOINED_ROOM, (event) => {
-            // TODO emit 'joined' event (internally)
-            console.log('joined room %s', event.detail.roomName);
             for (const peerId of event.detail['peerIds']) {
                 this.initiatePeerConnection(peerId, true);
             }
+
+            this.dispatchEvent<'joined'>(new CustomEvent('joined', {
+                detail: {
+                    roomName: event.detail['roomName'],
+                    peers: event.detail['peerIds']
+                }
+            }));
         });
 
         this.client.addEventListener(MessageTypes.USER_JOINED, (event) => {
             const peerId = event.detail['peerId'];
-            console.log('someone joined room: %s', peerId);
             this.initiatePeerConnection(peerId, false);
+
+            this.dispatchEvent<'user_joined'>(new CustomEvent('user_joined', {
+                detail: {
+                    peer: event.detail['peerId']
+                }
+            }));
         })
 
         this.client.addEventListener(MessageTypes.USER_LEFT, (event) => {
@@ -63,6 +90,12 @@ export class Room {
             const peer = this.peers.get(peerId);
             peer?.destroy();
             this.peers.delete(peerId);
+
+            this.dispatchEvent<'user_left'>(new CustomEvent('user_left', {
+                detail: {
+                    peer: event.detail['peerId']
+                }
+            }));
         })
     }
 

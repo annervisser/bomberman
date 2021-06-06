@@ -29,7 +29,7 @@ declare interface RequestJoinData {
 }
 
 declare interface JoinedRoomData {
-    'peerIds': string;
+    'peerIds': string[];
     'roomName': string;
 }
 

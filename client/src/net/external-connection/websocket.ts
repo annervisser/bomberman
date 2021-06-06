@@ -23,7 +23,6 @@ export class ExternalConnectionWebSocket extends ExternalConnection {
         this.socket.onmessage = (message: MessageEvent) => {
             const serverMessage = <ServerMessage>JSON.parse(message.data);
 
-            console.log('received:', serverMessage);
             this.dispatchEvent<ConnectionEvents.Message>(
                 new CustomEvent<ServerMessage>(ConnectionEvents.Message, {
                     detail: serverMessage
@@ -36,7 +35,7 @@ export class ExternalConnectionWebSocket extends ExternalConnection {
         if (!this.ready) {
             throw new Error('Cant send data before connection is ready');
         }
-        console.log('WS SENT:', data);
+        console.debug('WS SENT:', data);
         this.socket.send(data);
     }
 
