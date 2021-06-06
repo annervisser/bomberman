@@ -7,6 +7,7 @@ import * as CollisionDetection from "./game-mechanics/collision-detection";
 import {GameMap} from "./objects/game-map";
 import {Point} from "./util/point";
 import {Bomb} from "./objects/bomb";
+import {Room} from './net/room';
 
 export class Game {
     private readonly ctx: CanvasRenderingContext2D;
@@ -22,7 +23,7 @@ export class Game {
         return [this.ctx.canvas.width, this.ctx.canvas.height];
     }
 
-    constructor(canvas: HTMLCanvasElement) {
+    constructor(canvas: HTMLCanvasElement, private room: Room) {
         this.ctx = <CanvasRenderingContext2D>canvas.getContext('2d');
 
         canvas.width = 64 * 21;
@@ -107,6 +108,19 @@ export class Game {
 
             }
         });
+
+        this.eventBus.subscribe((e) => {
+            if (!e.remote) {
+                this.room.sendMessage(JSON.stringify(e));
+            }
+        }, 9999);
+
+        this.room.addEventListener('peer_message', (e) => {
+            const data = e.detail;
+            console.log('peer message', data);
+            data.remote = true;
+            this.eventBus.emit(data);
+        })
     }
 
     public checkExplosionCollision(explosionArea: Point[], bombId: string, playerId: string): void {

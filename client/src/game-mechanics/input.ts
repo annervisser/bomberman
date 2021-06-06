@@ -13,6 +13,7 @@ const reservedKeys = [
     'keyS',
     'keyD',
     'Space',
+    'AltLeft'
 ];
 
 export class Input {
@@ -33,7 +34,15 @@ export class Input {
             // TODO Does it make sense to delay this until the end of a frame (theoretical: keyup and down between frames)?
             this.pressedKeys.delete(e.code);
         }, false);
-        document.addEventListener('blur', () => this.pressedKeys.clear())
+        document.addEventListener('blur', () => {
+            console.log('blurd');
+
+            this.pressedKeys.clear();
+        })
+        document.getElementById('canvasEl')?.addEventListener('blur', () => {
+            console.log('blur');
+            this.pressedKeys.clear();
+        })
 
         eventBus.subscribe((event) => {
             if (event.type === GameEventType.Input) {

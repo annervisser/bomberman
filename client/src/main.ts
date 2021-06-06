@@ -6,7 +6,6 @@ import {Client} from './net/client';
 
 window.addEventListener('load', () => {
     const canvasEl = <HTMLCanvasElement>document.querySelector('#canvasEl');
-    new Game(canvasEl);
 
     const external = new ExternalConnectionWebSocket('ws://localhost:8080');
     external.addEventListener(ConnectionEvents.Open, () => {
@@ -16,6 +15,8 @@ window.addEventListener('load', () => {
         room.addEventListener('joined', () => updateUI(room));
         room.addEventListener('user_joined', () => updateUI(room));
         room.addEventListener('user_left', () => updateUI(room));
+
+        new Game(canvasEl, room);
     })
 });
 

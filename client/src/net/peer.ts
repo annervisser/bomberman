@@ -3,14 +3,19 @@ import {WrappedInEvent} from './client';
 import {MessageResponses, MessageTypes} from '@api/api';
 import {AbstractEventTarget} from './external-connection/abstract-event-target';
 
-export class Peer extends AbstractEventTarget<Pick<WrappedInEvent<MessageResponses>, MessageTypes.SDP | MessageTypes.ICE_CANDIDATE>> {
+type serverEvents = Pick<WrappedInEvent<MessageResponses>, MessageTypes.SDP | MessageTypes.ICE_CANDIDATE>;
+type peerEvents = {
+    'message': CustomEvent
+};
+
+export class Peer extends AbstractEventTarget<serverEvents & peerEvents> {
     private readonly peerConnection: RTCPeerConnection;
     private dataChannel: RTCDataChannel | null = null;
 
     private pendingCandidates: Array<RTCIceCandidateInit | RTCIceCandidate> = [];
 
     constructor(private readonly initiator: boolean, private readonly id: string) {
-        super([MessageTypes.SDP, MessageTypes.ICE_CANDIDATE]);
+        super([MessageTypes.SDP, MessageTypes.ICE_CANDIDATE, 'message']);
         this.peerConnection = this.createPeerConnection();
         if (initiator) {
             const dataChannel = this.createDataChannel();
@@ -110,6 +115,9 @@ export class Peer extends AbstractEventTarget<Pick<WrappedInEvent<MessageRespons
 
         dataChannel.onmessage = (e: MessageEvent) => {
             this.debugLogger('Data channel message:', e.data);
+            this.dispatchEvent<'message'>(new CustomEvent('message', {
+                detail: JSON.parse(e.data)
+            }))
         };
     }
 

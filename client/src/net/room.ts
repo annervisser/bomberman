@@ -8,6 +8,7 @@ declare interface RoomEvents {
     'joined': CustomEvent<{ roomName: string, peers: string[] }>;
     'user_joined': CustomEvent<{ peer: string }>;
     'user_left': CustomEvent<{ peer: string }>;
+    'peer_message': CustomEvent<any>;
 }
 
 export class Room extends AbstractEventTarget<RoomEvents> {
@@ -23,7 +24,7 @@ export class Room extends AbstractEventTarget<RoomEvents> {
     private pendingCandidates = new Map<string, Array<RTCIceCandidateInit | RTCIceCandidate>>();
 
     constructor(private client: Client, roomName: string) {
-        super(['joined', 'user_joined', 'user_left']);
+        super(['joined', 'user_joined', 'user_left', 'peer_message']);
 
         this.roomName = roomName;
         this.addEventListeners();
@@ -111,6 +112,13 @@ export class Room extends AbstractEventTarget<RoomEvents> {
             MessageTypes.ICE_CANDIDATE,
             e => this.client.send(MessageTypes.ICE_CANDIDATE, e.detail)
         );
+
+        peer.addEventListener(
+            'message',
+            (e) => this.dispatchEvent<'peer_message'>(new CustomEvent('peer_message', {
+                detail: e.detail
+            }))
+        )
 
         const pendingSdp = this.pendingSdp.get(userId);
         if (pendingSdp) {
