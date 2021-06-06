@@ -1,9 +1,5 @@
 import {AbstractEventTarget} from './abstract-event-target';
-import {ServerMessage} from '../client';
-
-export interface MessageData {
-    message: string | null;
-}
+import {ServerMessage} from '@api/api';
 
 export enum ConnectionEvents {
     Open = 'open',

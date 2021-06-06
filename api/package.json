@@ -1,0 +1,5 @@
+{
+  "name": "@api/api",
+  "main": "./api.ts",
+  "types": "./api.ts"
+}

@@ -18,6 +18,7 @@
     "vite-plugin-imagemin": ">=0.3 <1"
   },
   "dependencies": {
+    "@api/api": "../api",
     "webrtc-adapter": "^8.0.0"
   }
 }

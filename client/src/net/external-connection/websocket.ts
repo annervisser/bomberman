@@ -1,5 +1,5 @@
 import {ConnectionEvents, ExternalConnection,} from './external-connection';
-import {ServerMessage} from '../client';
+import {ServerMessage} from '@api/api';
 
 export class ExternalConnectionWebSocket extends ExternalConnection {
     private socket: WebSocket;
@@ -21,13 +21,11 @@ export class ExternalConnectionWebSocket extends ExternalConnection {
             this.dispatchEvent<ConnectionEvents.Open>(new Event(ConnectionEvents.Closed));
         };
         this.socket.onmessage = (message: MessageEvent) => {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            const serverMessage = JSON.parse(message.data);
+            const serverMessage = <ServerMessage>JSON.parse(message.data);
 
             console.log('received:', serverMessage);
             this.dispatchEvent<ConnectionEvents.Message>(
                 new CustomEvent<ServerMessage>(ConnectionEvents.Message, {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                     detail: serverMessage
                 })
             );

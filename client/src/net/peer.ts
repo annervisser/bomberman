@@ -1,8 +1,9 @@
 import {NetConfig} from './config';
-import {MessageResponses, MessageTypes} from './client';
+import {WrappedInEvent} from './client';
+import {MessageResponses, MessageTypes} from '@api/api';
 import {AbstractEventTarget} from './external-connection/abstract-event-target';
 
-export class Peer extends AbstractEventTarget<Pick<MessageResponses, MessageTypes.SDP | MessageTypes.ICE_CANDIDATE>> {
+export class Peer extends AbstractEventTarget<Pick<WrappedInEvent<MessageResponses>, MessageTypes.SDP | MessageTypes.ICE_CANDIDATE>> {
     private readonly peerConnection: RTCPeerConnection;
     private dataChannel: RTCDataChannel | null = null;
 
@@ -66,8 +67,8 @@ export class Peer extends AbstractEventTarget<Pick<MessageResponses, MessageType
                 this.debugLogger('ICE candidate:', e.candidate.candidate);
                 this.dispatchEvent<MessageTypes.ICE_CANDIDATE>(new CustomEvent(MessageTypes.ICE_CANDIDATE, {
                     detail: {
-                        peerId: this.id,
-                        candidate: e.candidate
+                        'peerId': this.id,
+                        'candidate': e.candidate
                     }
                 }))
             } else {
@@ -131,8 +132,8 @@ export class Peer extends AbstractEventTarget<Pick<MessageResponses, MessageType
             .then((offer) => conn.setLocalDescription(offer))
             .then(() => this.dispatchEvent<MessageTypes.SDP>(new CustomEvent(MessageTypes.SDP, {
                     detail: {
-                        peerId: this.id,
-                        sdp: <RTCSessionDescriptionInit>conn.localDescription
+                        'peerId': this.id,
+                        'sdp': <RTCSessionDescriptionInit>conn.localDescription
                     }
                 }))
             )

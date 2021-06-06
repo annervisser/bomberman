@@ -11,15 +11,15 @@ type EventListener<D> =
     | CustomerEventListenerObject<D>;
 
 export type KeyOf<T> = Exclude<keyof T, number | symbol>;
-export type ValueOf<T, K extends keyof T = keyof T> = T[K];
+export type ValueOf<T> = T[keyof T];
 
-export abstract class AbstractEventTarget<Events extends Record<possibleKeys, Event>, possibleKeys extends keyof Events = KeyOf<Events>> implements EventTarget {
-    private eventListeners = new Map<KeyOf<Events>, EventListener<ValueOf<Events>>[]>();
+export abstract class AbstractEventTarget<Events extends Record<possibleKeys, Event>, possibleKeys extends keyof Events = keyof Events> implements EventTarget {
+    private eventListeners = new Map<keyof Events, EventListener<ValueOf<Events>>[]>();
 
-    protected constructor(protected allowedTypes: KeyOf<Events>[]) {
+    protected constructor(protected allowedTypes: (keyof Events)[]) {
     }
 
-    private isAllowedType = (type: string): type is KeyOf<Events> => this.allowedTypes.includes(type as KeyOf<Events>);
+    private isAllowedType = (type: string): type is KeyOf<Events> => this.allowedTypes.includes(type as keyof Events);
 
     addEventListener<K extends KeyOf<Events>>(type: K, listener: EventListener<Events[K]> | null): void {
         if (!listener) {
@@ -31,7 +31,7 @@ export abstract class AbstractEventTarget<Events extends Record<possibleKeys, Ev
     }
 
     // TODO this doesnt type check that event.type === T
-    dispatchEvent<T extends KeyOf<Events> = never>(event: ValueOf<Events, T>): boolean {
+    dispatchEvent<T extends KeyOf<Events> = never>(event: Events[T]): boolean {
         if (!this.isAllowedType(event.type)) {
             throw new Error('Invalid event type dispatched');
         }

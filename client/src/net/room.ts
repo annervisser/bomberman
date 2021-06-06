@@ -1,6 +1,7 @@
-import {Client, MessageTypes} from './client';
+import {Client} from './client';
 import {Peer} from './peer';
 import {generateId} from '../util/id';
+import {MessageTypes} from '@api/api';
 
 export class Room {
     private peers = new Map<string, Peer>();
@@ -10,15 +11,15 @@ export class Room {
     constructor(private client: Client) {
         this.addEventListeners();
         this.client.send(MessageTypes.REQUEST_JOIN, {
-            peerId: generateId(),
-            roomName: 'room'
+            'peerId': generateId(),
+            'roomName': 'room'
         });
     }
 
     private addEventListeners() {
         this.client.addEventListener(MessageTypes.SDP, (event) => {
-            const peerId = event.detail.peerId;
-            const sdp = event.detail.sdp;
+            const peerId = event.detail['peerId'];
+            const sdp = event.detail['sdp'];
 
             const peer = this.peers.get(peerId);
             if (peer) {
@@ -30,8 +31,8 @@ export class Room {
         });
 
         this.client.addEventListener(MessageTypes.ICE_CANDIDATE, (event) => {
-            const peerId = event.detail.peerId;
-            const candidate = event.detail.candidate;
+            const peerId = event.detail['peerId'];
+            const candidate = event.detail['candidate'];
             const peer = this.peers.get(peerId);
             if (peer) {
                 void peer.addIceCandidate(candidate).catch();
@@ -46,19 +47,19 @@ export class Room {
         this.client.addEventListener(MessageTypes.JOINED_ROOM, (event) => {
             // TODO emit 'joined' event (internally)
             console.log('joined room %s', event.detail.roomName);
-            for (const peerId of event.detail.peerIds) {
+            for (const peerId of event.detail['peerIds']) {
                 this.initiatePeerConnection(peerId, true);
             }
         });
 
         this.client.addEventListener(MessageTypes.USER_JOINED, (event) => {
-            const peerId = event.detail.peerId;
+            const peerId = event.detail['peerId'];
             console.log('someone joined room: %s', peerId);
             this.initiatePeerConnection(peerId, false);
         })
 
         this.client.addEventListener(MessageTypes.USER_LEFT, (event) => {
-            const peerId = event.detail.peerId;
+            const peerId = event.detail['peerId'];
             const peer = this.peers.get(peerId);
             peer?.destroy();
             this.peers.delete(peerId);
