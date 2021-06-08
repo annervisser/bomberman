@@ -19,26 +19,26 @@ export type GameEvent =
 
 export interface BaseGameEvent {
     id?: string;
+    playerId: string | 'current';
     type: GameEventType;
+    remote?: boolean;
 }
 
 export interface PlayerMoveEvent extends BaseGameEvent {
     type: GameEventType.PlayerMove
-    playerId: string | 'current';
     originalPosition: Point;
     position: Point;
 }
 
 export interface BombPlacedEvent extends BaseGameEvent {
+    bombId?: string
     type: GameEventType.BombPlaced
-    playerId: string | 'current';
     position: Point;
 }
 
 export interface ExplosionEvent extends BaseGameEvent {
     type: GameEventType.Explosion
     bombId: string;
-    playerId: string | 'current';
     explosionArea: Point[];
 }
 
@@ -46,6 +46,10 @@ export interface PlayerDeathEvent extends BaseGameEvent {
     type: GameEventType.PlayerDeath
     bombId: string;
     playerId: string | 'current';
+}
+
+export class CancelEvent extends Error {
+
 }
 
 export type EventHandlerFn<T extends GameEvent> = (event: T) => T | void;
@@ -86,7 +90,14 @@ export class EventBus {
         let event: GameEvent = newEvent;
         event.id = event.id ?? 'event-' + generateId();
         for (const handler of this.handlers) {
-            event = handler.handle(event) || event;
+            try {
+                event = handler.handle(event) || event;
+            } catch (e) {
+                if (e instanceof CancelEvent) {
+                    return;
+                }
+                throw e;
+            }
         }
     }
 }

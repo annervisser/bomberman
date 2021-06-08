@@ -1,6 +1,12 @@
 import {Sprites, SpriteStore} from "./graphics/sprite-store";
 import {Input} from "./game-mechanics/input";
-import {EventBus, GameEventType, PlayerDeathEvent} from "./game-mechanics/events";
+import {
+    CancelEvent,
+    EventBus,
+    GameEvent,
+    GameEventType,
+    PlayerDeathEvent
+} from "./game-mechanics/events";
 import {Player} from "./objects/player";
 import * as PlayerMovement from "./game-mechanics/player-movement";
 import * as CollisionDetection from "./game-mechanics/collision-detection";
@@ -16,7 +22,20 @@ export class Game {
     private readonly spriteStore = new SpriteStore();
     private readonly input = new Input(this.eventBus)
 
-    private player!: Player;
+    private players = new Map<string, Player>();
+
+    private getPlayer(id: string): Player {
+        const player = this.players.get(id);
+        if (!player) {
+            throw new Error('player with id ' + id + ' not found');
+        }
+        return player;
+    }
+
+    private get currentPlayer(): Player {
+        return <Player>this.players.get(this.room.ownID);
+    }
+
     private map = new GameMap(this.eventBus);
 
     private get size(): Point {
@@ -49,32 +68,40 @@ export class Game {
     }
 
     private setup() {
-        this.player = new Player(64, 64, this.spriteStore)
+        // this.player = new Player(64, 64, this.spriteStore);
 
         this.eventBus.subscribe((event) => {
-            if ('playerId' in event && event.playerId === 'current') {
-                event.playerId = this.player.id;
+            if (event.playerId === 'current') {
+                event.playerId = this.currentPlayer.id;
             }
 
             if (event.type !== GameEventType.PlayerMove) {
                 return;
             }
-            event.position = CollisionDetection.correctPositionForCollisions(
-                event.originalPosition,
-                event.position,
-                this.map.walls
-            );
-            this.player.pos = event.position;
+
+            if (!event.remote) {
+                event.position = CollisionDetection.correctPositionForCollisions(
+                    event.originalPosition,
+                    event.position,
+                    this.map.walls
+                );
+
+                if (event.originalPosition.join() === event.position.join()) {
+                    throw new CancelEvent();
+                }
+            }
+
+            this.getPlayer(event.playerId).pos = event.position;
             return event;
         }, -100);
 
         this.eventBus.subscribe((event) => {
             switch (event.type) {
                 case GameEventType.Input:
-                    PlayerMovement.handleInputEvent(event, this.player, this.eventBus);
+                    PlayerMovement.handleInputEvent(event, this.currentPlayer, this.eventBus);
                     break;
                 case GameEventType.PlayerMove:
-                    for (const bomb of this.map.bombs.values()) {
+                    for (const bomb of this.map.getBombs()) {
                         switch (bomb.state) {
                             case 'fused':
                                 CollisionDetection.checkBombCollisions(
@@ -88,7 +115,7 @@ export class Game {
                                     this.checkExplosionCollision(
                                         bomb.explosionArea,
                                         bomb.id,
-                                        this.player.id
+                                        this.currentPlayer
                                     );
                                 }
                                 break;
@@ -96,42 +123,70 @@ export class Game {
                     }
                     break;
                 case GameEventType.BombPlaced:
-                    this.map.bombs.add(new Bomb(event.position));
+                    (() => {
+                        const bombId = event.bombId ?? undefined; // undefined falls back to default generated id
+                        const bomb = new Bomb(event.position, event.playerId, bombId);
+                        this.map.addBomb(bomb);
+                        event.bombId = bomb.id;
+                    })(); // TODO this is hideous
                     break;
                 case GameEventType.Explosion:
-                    this.checkExplosionCollision(event.explosionArea, event.bombId, event.playerId);
+                    this.map.handleBombExplosion(event)
+                    this.checkExplosionCollision(event.explosionArea, event.bombId, this.currentPlayer);
+                    if (event.playerId !== this.currentPlayer.id) {
+                        throw new CancelEvent();
+                    }
                     break;
                 case GameEventType.PlayerDeath:
-                    this.player.invincible = new Date().getTime();
-                    this.player.pos = <Point>this.player.spawn.map((n) => n * GameMap.TileSize);
+                    (() => {
+                        const player = this.getPlayer(event.playerId);
+                        player.invincible = new Date().getTime();
+                        player.pos = <Point>player.spawn.map((n) => n * GameMap.TileSize);
+                    })();
                     break;
 
             }
         });
 
+        // TODO this crashes when STUN fails
         this.eventBus.subscribe((e) => {
-            if (!e.remote) {
+            if (!e.remote && e.type !== GameEventType.Input) {
+                console.log('sending message', e)
                 this.room.sendMessage(JSON.stringify(e));
             }
         }, 9999);
 
         this.room.addEventListener('peer_message', (e) => {
-            const data = e.detail;
+            const data = <GameEvent>e.detail;
             console.log('peer message', data);
             data.remote = true;
             this.eventBus.emit(data);
+        });
+
+        this.room.addEventListener('user_joined', (e) => {
+            this.players.set(e.detail.peer, new Player(64, 64, this.spriteStore, e.detail.peer))
+        });
+
+        this.room.addEventListener('user_left', (e) => {
+            this.players.delete(e.detail.peer);
+        })
+
+        this.room.addEventListener('joined', () => {
+            // TODO get starting positions synched between clients
+            const playerIds = [this.room.ownID, ...this.room.peerIds];
+            playerIds.forEach((peerId) => this.players.set(peerId, new Player(64, 64, this.spriteStore, peerId)));
         })
     }
 
-    public checkExplosionCollision(explosionArea: Point[], bombId: string, playerId: string): void {
+    public checkExplosionCollision(explosionArea: Point[], bombId: string, player: Player): void {
         for (const explosionPos of explosionArea) {
-            if (!this.player.invincible
-                && CollisionDetection.checkExplosionCollision(this.player, explosionPos)
+            if (!player.invincible
+                && CollisionDetection.checkExplosionCollision(player, explosionPos)
             ) {
                 this.eventBus.emit<PlayerDeathEvent>({
                     type: GameEventType.PlayerDeath,
                     bombId: bombId,
-                    playerId: playerId
+                    playerId: player.id
                 });
                 break;
             }
@@ -155,6 +210,8 @@ export class Game {
         this.input.emit();
         this.ctx.clearRect(0, 0, ...this.size);
         this.map.draw(this.ctx, deltaT);
-        this.player.draw(this.ctx, deltaT);
+        for (const player of this.players.values()) {
+            player.draw(this.ctx, deltaT);
+        }
     }
 }

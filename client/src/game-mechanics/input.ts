@@ -61,6 +61,7 @@ export class Input {
         const event: GameInputEvent = {
             type: GameEventType.Input,
             pressedKeys: pressedKeys,
+            playerId: 'current'
             // newKeys: pressedKeys.filter((k) => !this.previousEvent?.pressedKeys.includes(k)),
             // liftedKeys: this.previousEvent?.pressedKeys.filter((k) => !pressedKeys.includes(k)) ?? []
         };
