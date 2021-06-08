@@ -1,8 +1,8 @@
-import WebSocket, {Server} from 'ws';
-import {MessageTypes} from '../api';
+import WebSocket from 'ws';
+import {MessageTypes} from '@api/api';
 
-const wss = new Server({
-    port: 8080
+const wss = new WebSocket.Server({
+    port: 3001
 });
 
 console.log('Starting server...');

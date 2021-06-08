@@ -4,10 +4,12 @@ import {Room} from './net/room';
 import {ConnectionEvents} from './net/external-connection/external-connection';
 import {Client} from './net/client';
 
+declare const WS_SERVER: string;
+
 window.addEventListener('load', () => {
     const canvasEl = <HTMLCanvasElement>document.querySelector('#canvasEl');
 
-    const external = new ExternalConnectionWebSocket('ws://localhost:8080');
+    const external = new ExternalConnectionWebSocket(WS_SERVER);
     external.addEventListener(ConnectionEvents.Open, () => {
         const client = new Client(external);
         const roomName = prompt('Room:', 'room') ?? 'room'
