@@ -116,7 +116,7 @@ export class Peer extends AbstractEventTarget<serverEvents & peerEvents> {
         dataChannel.onmessage = (e: MessageEvent) => {
             this.debugLogger('Data channel message:', e.data);
             this.dispatchEvent<'message'>(new CustomEvent('message', {
-                detail: JSON.parse(e.data)
+                detail: <unknown>JSON.parse(e.data)
             }))
         };
     }

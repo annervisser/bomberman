@@ -8,7 +8,7 @@ declare interface RoomEvents {
     'joined': CustomEvent<{ roomName: string, peers: string[] }>;
     'user_joined': CustomEvent<{ peer: string }>;
     'user_left': CustomEvent<{ peer: string }>;
-    'peer_message': CustomEvent<any>;
+    'peer_message': CustomEvent;
 }
 
 export class Room extends AbstractEventTarget<RoomEvents> {
@@ -116,7 +116,7 @@ export class Room extends AbstractEventTarget<RoomEvents> {
         peer.addEventListener(
             'message',
             (e) => this.dispatchEvent<'peer_message'>(new CustomEvent('peer_message', {
-                detail: e.detail
+                detail: <unknown>e.detail
             }))
         )
 
