@@ -75,16 +75,6 @@ export class GameMap {
             throw new Error('Attempting to draw explosion for non exploded bomb');
         }
 
-        let roundFn = Math.round;
-        if (bomb.velocity) {
-            roundFn = Math.min(...bomb.velocity) < 0 ? Math.floor : Math.ceil;
-        }
-
-        bomb.pos = [
-            roundFn(bomb.pos[0]),
-            roundFn(bomb.pos[1]),
-        ]
-
         ctx.fillStyle = 'orange';
         bomb.explosionArea.forEach(
             (pos: Point) => ctx.fillRect(pos[0] * 64, pos[1] * 64, 64, 64)
@@ -102,6 +92,18 @@ export class GameMap {
             console.warn('bomb already exploded')
         }
 
+        // Snap bomb to grid on explode
+        let roundFn = Math.round;
+        if (bomb.velocity) {
+            roundFn = Math.min(...bomb.velocity) < 0 ? Math.floor : Math.ceil;
+        }
+
+        bomb.pos = [
+            roundFn(bomb.pos[0]),
+            roundFn(bomb.pos[1]),
+        ]
+
+        // Calculcate explosion area
         let firstRun = true;
         bomb.explosionArea = [];
 

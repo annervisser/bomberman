@@ -144,7 +144,6 @@ export class Game {
     }
 
     private handleExplosionEvent(event: ExplosionEvent) {
-        // TODO bombs currently dont snap to grid on explode, also causing blocks to not be destroyed
         this.map.handleBombExplosion(event)
         this.checkExplosionCollision(event.explosionArea, event.bombId, this.currentPlayer);
         if (event.playerId !== this.currentPlayer.id) {
