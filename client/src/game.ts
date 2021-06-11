@@ -1,11 +1,14 @@
 import {Sprites, SpriteStore} from "./graphics/sprite-store";
 import {Input} from "./game-mechanics/input";
 import {
+    BombPlacedEvent,
     CancelEvent,
     EventBus,
+    ExplosionEvent,
     GameEvent,
     GameEventType,
-    PlayerDeathEvent
+    PlayerDeathEvent,
+    PlayerMoveEvent
 } from "./game-mechanics/events";
 import {Player} from "./objects/player";
 import * as PlayerMovement from "./game-mechanics/player-movement";
@@ -98,53 +101,15 @@ export class Game {
         this.eventBus.subscribe((event) => {
             switch (event.type) {
                 case GameEventType.Input:
-                    PlayerMovement.handleInputEvent(event, this.currentPlayer, this.eventBus);
-                    break;
+                    return PlayerMovement.handleInputEvent(event, this.currentPlayer, this.eventBus);
                 case GameEventType.PlayerMove:
-                    for (const bomb of this.map.getBombs()) {
-                        switch (bomb.state) {
-                            case 'fused':
-                                CollisionDetection.checkBombCollisions(
-                                    event.originalPosition,
-                                    event.position,
-                                    bomb
-                                );
-                                break;
-                            case 'exploding':
-                                if (bomb.explosionArea?.length) {
-                                    this.checkExplosionCollision(
-                                        bomb.explosionArea,
-                                        bomb.id,
-                                        this.currentPlayer
-                                    );
-                                }
-                                break;
-                        }
-                    }
-                    break;
+                    return this.handlePlayerMoveEvent(event);
                 case GameEventType.BombPlaced:
-                    (() => {
-                        const bombId = event.bombId ?? undefined; // undefined falls back to default generated id
-                        const bomb = new Bomb(event.position, event.playerId, bombId);
-                        this.map.addBomb(bomb);
-                        event.bombId = bomb.id;
-                    })(); // TODO this is hideous
-                    break;
+                    return this.handleBombPlacedEvent(event);
                 case GameEventType.Explosion:
-                    this.map.handleBombExplosion(event)
-                    this.checkExplosionCollision(event.explosionArea, event.bombId, this.currentPlayer);
-                    if (event.playerId !== this.currentPlayer.id) {
-                        throw new CancelEvent();
-                    }
-                    break;
+                    return this.handleExplosionEvent(event);
                 case GameEventType.PlayerDeath:
-                    (() => {
-                        const player = this.getPlayer(event.playerId);
-                        player.invincible = new Date().getTime();
-                        player.pos = <Point>player.spawn.map((n) => n * GameMap.TileSize);
-                    })();
-                    break;
-
+                    return this.handlePlayerDeathEvent(event);
             }
         });
 
@@ -176,6 +141,51 @@ export class Game {
             const playerIds = [this.room.ownID, ...this.room.peerIds];
             playerIds.forEach((peerId) => this.players.set(peerId, new Player(64, 64, this.spriteStore, peerId)));
         })
+    }
+
+    private handleExplosionEvent(event: ExplosionEvent) {
+        // TODO bombs currently dont snap to grid on explode, also causing blocks to not be destroyed
+        this.map.handleBombExplosion(event)
+        this.checkExplosionCollision(event.explosionArea, event.bombId, this.currentPlayer);
+        if (event.playerId !== this.currentPlayer.id) {
+            throw new CancelEvent();
+        }
+    }
+
+    private handlePlayerDeathEvent(event: PlayerDeathEvent) {
+        const player = this.getPlayer(event.playerId);
+        player.invincible = new Date().getTime();
+        player.pos = <Point>player.spawn.map((n) => n * GameMap.TileSize);
+    }
+
+    private handleBombPlacedEvent(event: BombPlacedEvent) {
+        const bombId = event.bombId ?? undefined; // undefined falls back to default generated id
+        const bomb = new Bomb(event.position, event.playerId, bombId);
+        this.map.addBomb(bomb);
+        event.bombId = bomb.id;
+    }
+
+    private handlePlayerMoveEvent(event: PlayerMoveEvent) {
+        for (const bomb of this.map.getBombs()) {
+            switch (bomb.state) {
+                case 'fused':
+                    CollisionDetection.checkBombCollisions(
+                        event.originalPosition,
+                        event.position,
+                        bomb
+                    );
+                    break;
+                case 'exploding':
+                    if (bomb.explosionArea?.length) {
+                        this.checkExplosionCollision(
+                            bomb.explosionArea,
+                            bomb.id,
+                            this.currentPlayer
+                        );
+                    }
+                    break;
+            }
+        }
     }
 
     public checkExplosionCollision(explosionArea: Point[], bombId: string, player: Player): void {
