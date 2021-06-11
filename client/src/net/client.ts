@@ -20,12 +20,8 @@ export class Client extends AbstractEventTarget<WrappedInEvent<MessageResponses>
         });
     }
 
-    public send<T extends keyof MessageRequests>(type: T, data: MessageRequests[T]): void {
-        const request: ServerMessage = {
-            'type': type,
-            'data': <Record<string, unknown>><unknown>data
-        }
-        return this.connection.send(JSON.stringify(request));
+    get ready(): boolean {
+        return this.connection.ready;
     }
 
     private static validateServerEvent(message: Partial<ServerMessage>): message is ServerMessage {
@@ -38,5 +34,13 @@ export class Client extends AbstractEventTarget<WrappedInEvent<MessageResponses>
         }
 
         return true;
+    }
+
+    public send<T extends keyof MessageRequests>(type: T, data: MessageRequests[T]): void {
+        const request: ServerMessage = {
+            'type': type,
+            'data': <Record<string, unknown>><unknown>data
+        }
+        return this.connection.send(JSON.stringify(request));
     }
 }

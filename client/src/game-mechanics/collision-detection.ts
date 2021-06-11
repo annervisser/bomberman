@@ -142,7 +142,6 @@ function correctAxis(
     return direction < 0 ? moveToNegative : moveToPositive;
 }
 
-// TODO add switch for min vs max instead of returning both
 function getMinMaxPositions(objects: AbstractObject[], axis: Axis): [number, number] {
     // TODO take all collisions into account (or deduce relevant ones?)
     return objects.slice(0, 1)

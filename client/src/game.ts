@@ -12,7 +12,7 @@ import {
 } from "./game-mechanics/events";
 import {Player} from "./objects/player";
 import * as PlayerMovement from "./game-mechanics/player-movement";
-import * as CollisionDetection from "./game-mechanics/collision-detection";
+import * as Collision from "./game-mechanics/collision-detection";
 import {GameMap} from "./objects/game-map";
 import {Point} from "./util/point";
 import {Bomb} from "./objects/bomb";
@@ -71,8 +71,6 @@ export class Game {
     }
 
     private setup() {
-        // this.player = new Player(64, 64, this.spriteStore);
-
         this.eventBus.subscribe((event) => {
             if (event.playerId === 'current') {
                 event.playerId = this.currentPlayer.id;
@@ -83,14 +81,14 @@ export class Game {
             }
 
             if (!event.remote) {
-                event.position = CollisionDetection.correctPositionForCollisions(
+                event.position = Collision.correctPositionForCollisions(
                     event.originalPosition,
                     event.position,
                     this.map.walls
                 );
 
                 if (event.originalPosition.join() === event.position.join()) {
-                    throw new CancelEvent();
+                    throw new CancelEvent('Cancelling playermove: no move after coll. detection');
                 }
             }
 
@@ -115,10 +113,18 @@ export class Game {
 
         // TODO this crashes when STUN fails
         this.eventBus.subscribe((e) => {
-            if (!e.remote && e.type !== GameEventType.Input) {
-                console.log('sending message', e)
-                this.room.sendMessage(JSON.stringify(e));
+            if (e.remote || e.playerId !== this.currentPlayer.id || e.type === GameEventType.Input) {
+                return;
             }
+
+            if (!this.room.ready) {
+                // TODO actually handle this and show a warning/error
+                console.warn('Room not ready for sending messages');
+                return;
+            }
+
+            console.log('sending message', e);
+            this.room.sendMessage(JSON.stringify(e));
         }, 9999);
 
         this.room.addEventListener('peer_message', (e) => {
@@ -164,40 +170,24 @@ export class Game {
         event.bombId = bomb.id;
     }
 
-    private handlePlayerMoveEvent(event: PlayerMoveEvent) {
+    private handlePlayerMoveEvent(event: PlayerMoveEvent): void {
         for (const bomb of this.map.getBombs()) {
-            switch (bomb.state) {
-                case 'fused':
-                    CollisionDetection.checkBombCollisions(
-                        event.originalPosition,
-                        event.position,
-                        bomb
-                    );
-                    break;
-                case 'exploding':
-                    if (bomb.explosionArea?.length) {
-                        this.checkExplosionCollision(
-                            bomb.explosionArea,
-                            bomb.id,
-                            this.currentPlayer
-                        );
-                    }
-                    break;
+            if (bomb.state === 'fused') {
+                Collision.checkBombCollisions(event.originalPosition, event.position, bomb);
+            } else if (bomb.state === 'exploding' && bomb.explosionArea?.length) {
+                this.checkExplosionCollision(bomb.explosionArea, bomb.id, this.currentPlayer);
             }
         }
     }
 
     public checkExplosionCollision(explosionArea: Point[], bombId: string, player: Player): void {
         for (const explosionPos of explosionArea) {
-            if (!player.invincible
-                && CollisionDetection.checkExplosionCollision(player, explosionPos)
-            ) {
+            if (!player.invincible && Collision.checkExplosionCollision(player, explosionPos)) {
                 this.eventBus.emit<PlayerDeathEvent>({
                     type: GameEventType.PlayerDeath,
                     bombId: bombId,
                     playerId: player.id
                 });
-                break;
             }
         }
     }

@@ -14,6 +14,8 @@ interface ServerResponses {
 }
 
 export abstract class ExternalConnection extends AbstractEventTarget<ServerResponses> {
+    abstract get ready(): boolean;
+
     protected constructor() {
         super(Object.values(ConnectionEvents));
     }

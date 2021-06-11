@@ -14,11 +14,6 @@ declare interface RoomEvents {
 export class Room extends AbstractEventTarget<RoomEvents> {
     public ownID = generateId();
     public roomName: string;
-
-    public get peerIds(): string[] {
-        return Array.from(this.peers.keys());
-    }
-
     private peers = new Map<string, Peer>();
     private pendingSdp = new Map<string, RTCSessionDescriptionInit>();
     private pendingCandidates = new Map<string, Array<RTCIceCandidateInit | RTCIceCandidate>>();
@@ -32,6 +27,20 @@ export class Room extends AbstractEventTarget<RoomEvents> {
             'peerId': this.ownID,
             'roomName': this.roomName
         });
+    }
+
+    public get peerIds(): string[] {
+        return Array.from(this.peers.keys());
+    }
+
+    get ready(): boolean {
+        return this.client.ready;
+    }
+
+    sendMessage(message: string): void {
+        for (const peer of this.peers.values()) {
+            peer.sendMessage(message);
+        }
     }
 
     private addEventListeners() {
@@ -131,11 +140,5 @@ export class Room extends AbstractEventTarget<RoomEvents> {
         }
 
         this.peers.set(userId, peer);
-    }
-
-    sendMessage(message: string): void {
-        for (const peer of this.peers.values()) {
-            peer.sendMessage(message);
-        }
     }
 }
