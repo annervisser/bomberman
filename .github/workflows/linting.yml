@@ -40,7 +40,7 @@ jobs:
       - name: Check tscc bundle size
         run: |
           BUNDLE_FILESIZE=$(stat -c%s "./dist/game.js")
-          MAX_SIZE=10000
+          MAX_SIZE=20000
           if [ "$BUNDLE_FILESIZE" -gt "$MAX_SIZE" ]; then
             echo "Bundle size ($BUNDLE_FILESIZE) is larger than allowed ($MAX_SIZE)"
             exit 1
