@@ -2,7 +2,7 @@
   "prefix": "dist/",
   "modules": {
     "game": {
-      "entry": "main.ts"
+      "entry": "src/main.ts"
     }
   },
   "compilerFlags": {

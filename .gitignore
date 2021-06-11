@@ -1,8 +1,4 @@
-node_modules
-.DS_Store
-dist
-dist-ssr
-*.local
-.tscc_temp
+node_modules/
+.DS_Store/
 
-/.idea/
+.idea/

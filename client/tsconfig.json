@@ -8,10 +8,18 @@
     "strict": true,
     "types": [
       "vite/client"
-    ]
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@api/api": [
+        "./node_modules/@api/api"
+      ]
+    }
   },
+  "files": [
+    "node_modules/@api/api/api.ts"
+  ],
   "include": [
-    "main.ts",
     "src/**/*"
   ],
   "exclude": [

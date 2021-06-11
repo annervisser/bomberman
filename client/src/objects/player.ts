@@ -9,11 +9,13 @@ export class Player extends AbstractObject {
     public static size = 64;
     public invincible: number | null = null;
     public spawn: Point = [1, 1];
-    public readonly id = 'player-' + generateId();
+    public readonly id: string;
+    private color = [Math.random() * 255, Math.random() * 255, Math.random() * 255];
 
-    constructor(x: number, y: number, spriteStore: SpriteStore) {
+    constructor(x: number, y: number, spriteStore: SpriteStore, id = 'player-' + generateId()) {
         super(x, y);
         this.sprite = spriteStore.getSprite(Sprites.SolidBlue);
+        this.id = id;
     }
 
     draw(ctx: CanvasRenderingContext2D, deltaT: number): void {
@@ -22,7 +24,9 @@ export class Player extends AbstractObject {
         }
         const a = ctx.globalAlpha;
         ctx.globalAlpha = this.invincible ? 0.5 : 1;
-        this.sprite.draw(ctx, this.pos[0], this.pos[1], Player.size, Player.size);
+        // this.sprite.draw(ctx, this.pos[0], this.pos[1], Player.size, Player.size);
+        ctx.fillStyle = `rgb(${this.color.join(',')})`;
+        ctx.fillRect(this.pos[0], this.pos[1], Player.size, Player.size)
         ctx.globalAlpha = a;
     }
 }

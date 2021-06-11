@@ -7,16 +7,20 @@ export class Bomb extends AbstractObject {
     public static fuseTime = 1200;
     public static explosionTime = 400;
 
-    public readonly id = 'bomb-' + generateId();
+    public readonly id: string;
+    public readonly playerId: string;
     public timer = Bomb.fuseTime;
     public range = 3;
+    // TODO keep track of this per player
     public playerHasLetGo = false; // we dont want to push bombs until we've "untouched" them
     public velocity: Point | null = null;
     public exploded = false;
     public explosionArea: Point[] = [];
 
-    constructor(position: Point) {
+    constructor(position: Point, playerId: string, bombId = 'bomb-' + generateId()) {
         super(...position);
+        this.playerId = playerId;
+        this.id = bombId;
     }
 
     draw(ctx: CanvasRenderingContext2D, deltaT: number): void {
@@ -30,7 +34,7 @@ export class Bomb extends AbstractObject {
     }
 
     get state(): 'fused' | 'exploding' | 'expired' {
-        if (this.timer > 0) {
+        if (this.timer > 0 && !this.exploded) {
             return 'fused';
         }
 

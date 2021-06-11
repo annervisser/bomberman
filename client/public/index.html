@@ -5,14 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Bomberman</title>
-    <script type="module" src="/game.js"></script>
     <link href="/style.css" rel="stylesheet" type="text/css">
     <link rel="preload" as="image" href="/sprites/8x8.png">
+
+    <link rel="preconnect" href="wss://bomberjs.annervisser.nl">
+    <script>window.WS_SERVER = 'wss://bomberjs.annervisser.nl'</script>
+
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script type="module" src="/game.js"></script>
 </head>
 <body>
 <main id="app">
     <div>
         <h1>BombermanJS</h1>
+        <h2>Your name: <span id="playerName"></span> | Room: <span id="roomName"></span> | Players: <span
+                id="players"></span></h2>
         <canvas id="canvasEl"></canvas>
     </div>
 </main>

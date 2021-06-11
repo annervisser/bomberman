@@ -9,7 +9,15 @@ export class GameMap {
     public walls = new PositionMap<Wall>();
     public static TileSize = 64;
 
-    bombs: Set<Bomb> = new Set<Bomb>();
+    private bombs: Map<string, Bomb> = new Map<string, Bomb>();
+
+    public addBomb(bomb: Bomb): void {
+        this.bombs.set(bomb.id, bomb);
+    }
+
+    public getBombs(): Iterable<Bomb> {
+        return this.bombs.values();
+    }
 
     constructor(private eventBus: EventBus) {
         this.generateMap();
@@ -17,7 +25,7 @@ export class GameMap {
 
     public draw(ctx: CanvasRenderingContext2D, deltaT: number): void {
         this.walls.forEach(w => w.draw(ctx, deltaT));
-        for (const bomb of this.bombs) {
+        for (const bomb of this.bombs.values()) {
             switch (bomb.state) {
                 case 'fused':
                     if (bomb.velocity) {
@@ -25,10 +33,18 @@ export class GameMap {
                     }
                     break;
                 case 'exploding':
-                    this.handleExplosion(bomb, ctx);
+                    if (!bomb.exploded) {
+                        this.eventBus.emit<ExplosionEvent>({
+                            type: GameEventType.Explosion,
+                            explosionArea: bomb.explosionArea,
+                            bombId: bomb.id,
+                            playerId: 'current'
+                        });
+                    }
+                    this.drawExplodingBombExplosion(bomb, ctx);
                     break;
                 case 'expired':
-                    this.bombs.delete(bomb);
+                    this.bombs.delete(bomb.id);
                     continue;
             }
             bomb.draw(ctx, deltaT);
@@ -54,7 +70,29 @@ export class GameMap {
         }
     }
 
-    private handleExplosion(bomb: Bomb, ctx: CanvasRenderingContext2D) {
+    private drawExplodingBombExplosion(bomb: Bomb, ctx: CanvasRenderingContext2D) {
+        if (!bomb.exploded) {
+            throw new Error('Attempting to draw explosion for non exploded bomb');
+        }
+
+        ctx.fillStyle = 'orange';
+        bomb.explosionArea.forEach(
+            (pos: Point) => ctx.fillRect(pos[0] * 64, pos[1] * 64, 64, 64)
+        );
+    }
+
+    public handleBombExplosion(event: ExplosionEvent): void {
+        const bomb = this.bombs.get(event.bombId);
+
+        if (!bomb) {
+            throw new Error('Bomb with bombId ' + event.bombId + ' not found');
+        }
+
+        if (bomb.exploded) {
+            console.warn('bomb already exploded')
+        }
+
+        // Snap bomb to grid on explode
         let roundFn = Math.round;
         if (bomb.velocity) {
             roundFn = Math.min(...bomb.velocity) < 0 ? Math.floor : Math.ceil;
@@ -65,23 +103,7 @@ export class GameMap {
             roundFn(bomb.pos[1]),
         ]
 
-        ctx.fillStyle = 'orange';
-        const drawExplosion = (pos: Point) => ctx.fillRect(pos[0] * 64, pos[1] * 64, 64, 64)
-
-        !bomb.exploded
-            ? this.getExplosionArea(bomb, drawExplosion) // This callback saves us an extra loop
-            : bomb.explosionArea.forEach(drawExplosion);
-
-        this.eventBus.emit<ExplosionEvent>({
-            type: GameEventType.Explosion,
-            explosionArea: bomb.explosionArea,
-            bombId: bomb.id,
-            playerId: 'current'
-        });
-        bomb.exploded = true;
-    }
-
-    private getExplosionArea(bomb: Bomb, callback?: (point: Point) => void) {
+        // Calculcate explosion area
         let firstRun = true;
         bomb.explosionArea = [];
 
@@ -97,10 +119,12 @@ export class GameMap {
                         this.walls.delete(...searchPos);
                     }
                     bomb.explosionArea.push([...searchPos]);
-                    callback?.(searchPos)
                 }
             }
         }
+
+        bomb.exploded = true;
+        event.explosionArea = bomb.explosionArea;
     }
 
     private generateMap() {
