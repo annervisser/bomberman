@@ -51,8 +51,9 @@ export class Game {
         canvas.width = 64 * 21;
         canvas.height = 64 * 11;
         const root = document.documentElement;
-        root.style.setProperty('--canvas-width', `${canvas.width}px`)
-        root.style.setProperty('--canvas-height', `${canvas.height}px`)
+        root.style.setProperty('--canvas-grid-width', '21')
+        root.style.setProperty('--canvas-grid-height', '11')
+        root.style.setProperty('--canvas-grid-size', '64')
 
         this.ctx.imageSmoothingEnabled = false; // We want crispy pixels
 
