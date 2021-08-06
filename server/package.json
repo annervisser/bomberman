@@ -11,7 +11,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@api/api": "../api",
+    "@api/api": "file:../api",
     "ws": "^7.4.6"
   },
   "optionalDependencies": {
